@@ -106,7 +106,7 @@ lvM2 = (-) <$> lvE2 <*> lvP2
 
 
 data PtEtaPhiE = PtEtaPhiE Double Double Double Double
-    deriving (Show, Generic)
+    deriving (Show, Read, Generic)
 
 instance Binary PtEtaPhiE
 
@@ -126,7 +126,7 @@ type PtEtaPhiEs = [PtEtaPhiE]
 
 
 data XYZT = XYZT Double Double Double Double
-    deriving (Show, Generic)
+    deriving (Show, Generic, Read)
 
 instance Binary XYZT
 
