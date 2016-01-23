@@ -16,9 +16,14 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Data.HEP.LorentzVector, Data.HEP.PID
+  exposed-modules:     Data.HEP.LorentzVector
+                     , Data.HEP.PID
+                     , Data.HEP.Jet
   -- other-modules:       
-  other-extensions:    DeriveGeneric
-  build-depends:       base >=4.7 && <5.0, binary >=0.7, containers >=0.5
+  other-extensions:    DeriveGeneric, TupleSections
+  build-depends:       base >=4.7 && <5.0
+                     , binary >=0.7
+                     , containers >=0.5
+                     , data-ordlist >= 0.4.7
   hs-source-dirs:      src
   default-language:    Haskell2010
