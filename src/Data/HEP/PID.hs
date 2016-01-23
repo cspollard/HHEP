@@ -102,6 +102,8 @@ hadron p = nq2 p > 0 && nq3 p > 0
 meson p = hadron p && nq1 p == 0
 baryon p = hadron p && nq1 p > 0
 
+-- TODO
+-- this could be faster as Int?
 digit :: (Integral a) => a -> a -> a
 digit x n = div (abs x) (10^n) `mod` 10
 
@@ -136,3 +138,9 @@ isHadron = hadron . pid
 isMeson = meson . pid
 isBaryon = baryon . pid
 isTau p = abspid p == tau
+
+isPID :: HasPID hp => PID -> hp -> Bool
+isPID p part = p == pid part
+
+isPIDs :: HasPID hp => PIDSet -> hp -> Bool
+isPIDs ps part = pid part `member` ps
