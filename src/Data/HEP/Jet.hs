@@ -7,6 +7,9 @@ module Data.HEP.Jet where
 import Data.List.Ordered
 import Data.HEP.LorentzVector
 
+-- TODO
+-- this needs to be rethunk
+-- Beam is a PseudoJet?
 -- PseudoJet () -> no associated info
 data PseudoJet a =
                  -- a jet: the distance between child pseudojets, its
@@ -30,6 +33,9 @@ instance HasLorentzVector (PseudoJet a) where
 -- TODO
 -- Ord necessary?
 
+hasPJ :: PseudoJet a -> PseudoJet a -> Bool
+hasPJ p (PJet _ _ (q, q')) = (p == q) || (p == q')
+hasPJ p _ = error "PJConst has no subjets."
 
 pjdist :: PseudoJet a -> Double
 pjdist (PJet d _ _) = d
@@ -43,10 +49,9 @@ combinations :: [a] -> [(a, a)]
 combinations [] = []
 combinations (x:xs) = map (x,) xs ++ combinations xs
 
--- a JetAlg takes f
 type JetAlg a = [a] -> [PseudoJet a]
 
-{-
+
 runJetAlg :: (HasLorentzVector a, Eq a, LorentzVector b) =>
              (b -> b -> Double) ->
              (b -> Double) ->
@@ -54,7 +59,9 @@ runJetAlg :: (HasLorentzVector a, Eq a, LorentzVector b) =>
 runJetAlg dij diB as =
     where
         dbeams = foldr (insertBagBy pjdist) [] $ [PJConst (diB p) (lv p) p | p <- as]
-        -- TODO
-        -- this double counts.
-        dists = foldr (insertBagBy pjdist) dbeams $ \(p, q) -> PJet (dij p q) (lv p <> lv q) | p <- as, q <- as]
-        -}
+        dists = foldr (insertBagBy pjdist) dbeams $ map (\(p, q) -> PJet (dij p q) (lv p <> lv q) (p, q)) (combinations as)
+
+        f ps' [] = ps'
+        f ps' (p:ps) = case p of
+                        PJet _ _ _ _ -> 
+                        PConst _ _ _ _ -> f (p:ps') (filter (not . hasPJ p) ps)
