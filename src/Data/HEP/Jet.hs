@@ -9,17 +9,16 @@ import Data.HEP.LorentzVector
 
 -- TODO
 -- this needs to be rethunk
--- Beam is a PseudoJet?
 -- PseudoJet () -> no associated info
-data PseudoJet a =
-                 -- a jet: the distance between child pseudojets, its
-                 -- 4 momentum, and its child pseudojets
-                   PJet Double PtEtaPhiE (PseudoJet a, PseudoJet a)
-                 -- a constituent: its distance to the beam, its 4
-                 -- momentum, and its associated data
-                 | PJConst Double PtEtaPhiE a
-                 deriving Show
+data Constituent a =
+                   -- the beam
+                     Beam 
+                   -- a constituent with associated data
+                   | PJConst a
+                   deriving (Eq, Ord, Show)
 
+data PseudoJet a = PJNode Double PtEtaPhiE (PseudoJet a, PseudoJet a)
+                 | PJTip (Constituent a)
 
 instance Eq a => Eq (PseudoJet a) where
     (PJet _ _ (p1, p2)) == (PJet _ _ (q1, q2)) = p1 == q1 && p2 == q2

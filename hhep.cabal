@@ -18,7 +18,7 @@ cabal-version:       >=1.10
 library
   exposed-modules:     Data.HEP.LorentzVector
                      , Data.HEP.PID
-                     , Data.HEP.Jet
+                     -- , Data.HEP.Jet
   -- other-modules:       
   other-extensions:    DeriveGeneric, TupleSections
   build-depends:       base >=4.7 && <5.0
