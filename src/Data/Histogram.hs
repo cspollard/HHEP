@@ -24,8 +24,8 @@ histogram :: (RealFloat b) => Int -> (b, b) -> a -> Histogram a b
 histogram n range init = Histogram n range (V.replicate (n+2) init)
 
 
-fillOne :: (RealFloat b) => (c -> a -> a) -> Histogram a b -> (b, c) -> Histogram a b
-fillOne f (Histogram n (mn, mx) v) (x, w) = Histogram n (mn, mx) $ v // [(ix, f w $ v ! ix)]
+fillOne :: (RealFloat b) => (a -> c -> a) -> Histogram a b -> (b, c) -> Histogram a b
+fillOne f (Histogram n (mn, mx) v) (x, w) = Histogram n (mn, mx) $ v // [(ix, f (v ! ix) w)]
     where ix = floor (fromIntegral n * (x - mn) / (mx - mn)) + 1
 
 
@@ -38,13 +38,24 @@ instance Functor (Builder a) where
     -- f :: b -> c
     -- x :: b
     -- g :: a -> Builder a b
-    fmap f (Builder x g) = Builder (f x) (fmap (fmap f) g)
+    fmap f (Builder x g) = Builder (f x) (\y -> fmap f (g y))
+
+instance Applicative (Builder a) where
+    pure x = builder const x
+    -- f :: b -> c
+    -- g :: a -> Builder a (b -> c)
+    -- x :: b
+    -- y :: a -> Builder a b
+    Builder f g <*> Builder x y = Builder (f x) (\w -> g w <*> y w)
 
 builder :: (b -> a -> b) -> b -> Builder a b
 builder f x = Builder x (\y -> builder f (f x y))
 
 foldlBuilder :: Foldable f => f a -> Builder a b -> Builder a b
 foldlBuilder r ys = foldl build ys r
+
+histBuilder :: (RealFloat b) => (a -> c -> a) -> Histogram a b -> Builder (b, c) (Histogram a b)
+histBuilder f = builder (fillOne f)
 
 
 {-
