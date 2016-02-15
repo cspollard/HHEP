@@ -34,6 +34,8 @@ data Builder a b = Builder { built :: b, build :: a -> Builder a b }
 premap :: (a -> a') -> Builder a' b -> Builder a b
 premap f (Builder x g) = Builder x (fmap (premap f) (g . f))
 
+(<<-) = flip premap
+
 instance Functor (Builder a) where
     -- f :: b -> c
     -- x :: b
@@ -48,11 +50,20 @@ instance Applicative (Builder a) where
     -- y :: a -> Builder a b
     Builder f g <*> Builder x y = Builder (f x) (\w -> g w <*> y w)
 
+
 builder :: (b -> a -> b) -> b -> Builder a b
 builder f x = Builder x (\y -> builder f (f x y))
 
-foldlBuilder :: Foldable f => f a -> Builder a b -> Builder a b
-foldlBuilder r ys = foldl build ys r
+feedlBuilder :: Foldable f => Builder a b -> f a -> Builder a b
+feedlBuilder = foldl build
+
+feedrBuilder :: Foldable f => Builder a b -> f a -> Builder a b
+feedrBuilder = foldr (flip build)
+
+-- TODO
+-- HERE
+-- foldrBuilder :: Foldable f => Builder a b -> Builder [a] b
+-- foldrBuilder (Builder x f) = 
 
 histBuilder :: (RealFloat b) => (a -> c -> a) -> Histogram a b -> Builder (b, c) (Histogram a b)
 histBuilder f = builder (fillOne f)
