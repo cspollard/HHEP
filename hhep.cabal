@@ -18,10 +18,13 @@ cabal-version:       >=1.10
 library
   exposed-modules:     Data.HEP.LorentzVector
                      , Data.HEP.PID
+                     , Data.Histogram
                      -- , Data.HEP.Jet
   -- other-modules:       
   other-extensions:    DeriveGeneric, TupleSections
   build-depends:       base >=4.7 && <5.0
+                     , mtl >= 2.0
+                     , vector >= 0.10
                      , binary >=0.7
                      , containers >=0.5
                      , data-ordlist >= 0.4.7

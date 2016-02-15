@@ -7,22 +7,45 @@ module Data.HEP.Jet where
 import Data.List.Ordered
 import Data.HEP.LorentzVector
 
--- TODO
--- this needs to be rethunk
--- PseudoJet () -> no associated info
-data Constituent a =
-                   -- the beam
-                     Beam 
-                   -- a constituent with associated data
-                   | PJConst a
-                   deriving (Eq, Ord, Show)
 
-data PseudoJet a = PJNode Double PtEtaPhiE (PseudoJet a, PseudoJet a)
-                 | PJTip (Constituent a)
+data PseudoJet a = PseudoJet PtEtaPhiE (PseudoJet a, PseudoJet a)
+                 | Ghost PtEtaPhiE a
+                 | Constituent PtEtaPhiE a
+
+
+instance HasLorentzVector (PseudoJet a) where
+    lv (PseudoJet v _ ) = v
+    lv (Ghost v _ ) = v
+
+
+pseudoJet :: (HasLorentzVector a) => a -> PseudoJet a
+ghost x = Ghost (lv x) x
+
+ghost :: (HasLorentzVector a) => a -> Double -> PseudoJet a
+ghost vec ghostScale = Ghost (lvScale ghostScale (lv x)) x
+
+cluster :: Ord b => PJDist a b -> JetAlg a
+cluster d xs = undefined
+
+
+clusterStep :: [(Double, Int, Int)] -> IntMap (PseudoJet a) -> [PseudoJet a] -> [PseudoJet a]
+-- if no pjs to cluster
+-- or if only beam
+-- return jets
+clusterStep [] _ js = js
+clusterStep ds _ js = js
+
+-- TODO
+-- this could be much faster.
+clusterStep d (pj@(PJNode _ _ (pj', pj''):pjs) js = 
+    where
+        pjs' = filter (\p -> not $ (p `hasConst` pj') || (p `hasConst` pj'')) pjs
+
 
 instance Eq a => Eq (PseudoJet a) where
     (PJet _ _ (p1, p2)) == (PJet _ _ (q1, q2)) = p1 == q1 && p2 == q2
     (PJConst _ _ p) == (PJConst _ _ q) = p == q
+    PJBeam == PJBeam = True
     _ == _ = False
 
 instance HasLorentzVector (PseudoJet a) where
