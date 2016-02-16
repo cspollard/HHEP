@@ -75,6 +75,9 @@ feedl = foldl build
 feedr :: Foldable f => Builder a b -> f a -> Builder a b
 feedr = foldr (flip build)
 
+feedr' :: Foldable f => Builder a b -> f a -> Builder a b
+feedr' = foldr' (flip build)
+
 foldrBuilder :: Foldable f => Builder a b -> Builder (f a) b
 foldrBuilder (Builder x g) = let f y z = built (feedr (Builder y g) z) in builder f x
 
