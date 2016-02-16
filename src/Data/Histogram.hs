@@ -11,7 +11,7 @@ import GHC.Generics (Generic)
 
 
 -- very simple histogram implementation
-data Histogram b a = Histogram Int (b, b) (Vector a) deriving Generic
+data Histogram b a = Histogram Int (b, b) (Vector a) deriving (Generic, Show)
 
 instance Functor (Histogram b) where
     f `fmap` Histogram x y v = Histogram x y $ f `fmap` v
@@ -33,7 +33,10 @@ histogram n range init = Histogram n range (V.replicate (n+2) init)
 
 fillOne :: (RealFloat b) => (a -> c -> a) -> Histogram b a -> (b, c) -> Histogram b a
 fillOne f (Histogram n (mn, mx) v) (x, w) = Histogram n (mn, mx) $ v // [(ix, f (v ! ix) w)]
-    where ix = floor (fromIntegral n * (x - mn) / (mx - mn)) + 1
+    where
+        ix | x < mn = 0
+           | x > mx = n+1
+           | otherwise = floor (fromIntegral n * (x - mn) / (mx - mn)) + 1
 
 
 -- TODO
