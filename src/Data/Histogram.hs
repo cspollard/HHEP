@@ -11,23 +11,35 @@ import GHC.Generics (Generic)
 
 
 -- very simple histogram implementation
-data Histogram a b = Histogram Int (b, b) (Vector a) deriving Generic
+data Histogram b a = Histogram Int (b, b) (Vector a) deriving Generic
+
+instance Functor (Histogram b) where
+    f `fmap` Histogram x y v = Histogram x y $ f `fmap` v
+
+instance Foldable (Histogram b) where
+    foldr f b (Histogram x y v) = foldr f b v
+
 
 instance (Binary a) => Binary (Vector a) where
     put = put . V.toList
     get = V.fromList <$> get
 
-instance (Binary a, Binary b) => Binary (Histogram a b) where
+instance (Binary a, Binary b) => Binary (Histogram b a) where
 
 
-histogram :: (RealFloat b) => Int -> (b, b) -> a -> Histogram a b
+histogram :: (RealFloat b) => Int -> (b, b) -> a -> Histogram b a
 histogram n range init = Histogram n range (V.replicate (n+2) init)
 
 
-fillOne :: (RealFloat b) => (a -> c -> a) -> Histogram a b -> (b, c) -> Histogram a b
+fillOne :: (RealFloat b) => (a -> c -> a) -> Histogram b a -> (b, c) -> Histogram b a
 fillOne f (Histogram n (mn, mx) v) (x, w) = Histogram n (mn, mx) $ v // [(ix, f (v ! ix) w)]
     where ix = floor (fromIntegral n * (x - mn) / (mx - mn)) + 1
 
+
+-- TODO
+-- is this easier with just (b -> a -> b) functions?
+-- unclear how to have Functor and Applicative instances that way.
+-- but: are they really necessary?
 
 data Builder a b = Builder { built :: b, build :: a -> Builder a b }
 
@@ -54,20 +66,35 @@ instance Applicative (Builder a) where
 builder :: (b -> a -> b) -> b -> Builder a b
 builder f x = Builder x (\y -> builder f (f x y))
 
-feedlBuilder :: Foldable f => Builder a b -> f a -> Builder a b
-feedlBuilder = foldl build
+feedl :: Foldable f => Builder a b -> f a -> Builder a b
+feedl = foldl build
 
-feedrBuilder :: Foldable f => Builder a b -> f a -> Builder a b
-feedrBuilder = foldr (flip build)
+feedr :: Foldable f => Builder a b -> f a -> Builder a b
+feedr = foldr (flip build)
 
--- TODO
--- HERE
--- foldrBuilder :: Foldable f => Builder a b -> Builder [a] b
--- foldrBuilder (Builder x f) = 
+foldrBuilder :: Foldable f => Builder a b -> Builder (f a) b
+foldrBuilder (Builder x g) = let f y z = built (feedr (Builder y g) z) in builder f x
 
-histBuilder :: (RealFloat b) => (a -> c -> a) -> Histogram a b -> Builder (b, c) (Histogram a b)
+foldlBuilder :: Foldable f => Builder a b -> Builder (f a) b
+foldlBuilder (Builder x g) = let f y z = built (feedl (Builder y g) z) in builder f x
+
+histBuilder :: (RealFloat b) => (a -> c -> a) -> Histogram b a -> Builder (b, c) (Histogram b a)
 histBuilder f = builder (fillOne f)
 
+integral :: Monoid a => Histogram b a -> a
+integral = fold
+
+underflow :: Histogram b a -> a
+underflow (Histogram _ _ v) = v ! 0
+
+overflow :: Histogram b a -> a
+overflow (Histogram n _ v) = v ! (n+1)
+
+toTuples :: (RealFloat b) => Histogram b a -> [((b, b), a)]
+toTuples (Histogram n (xmin, xmax) v) = map (\ix -> (f ix, v ! ix)) [1..n]
+    where
+        step = (xmax - xmin) / (fromIntegral n)
+        f i = let y = xmin + (fromIntegral i)*step in (y, y+step)
 
 {-
 -- TODO
