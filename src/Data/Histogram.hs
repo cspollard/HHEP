@@ -44,7 +44,9 @@ fillOne f (Histogram n (mn, mx) v) (x, w) = Histogram n (mn, mx) $ v // [(ix, f 
 -- unclear how to have Functor and Applicative instances that way.
 -- but: are they really necessary?
 
-data Builder a b = Builder { built :: b, build :: a -> Builder a b }
+-- TODO
+-- should this be strict?
+data Builder a b = Builder { built :: !b, build :: a -> Builder a b }
 
 premap :: (a -> a') -> Builder a' b -> Builder a b
 premap f (Builder x g) = Builder x (fmap (premap f) (g . f))
