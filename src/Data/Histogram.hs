@@ -11,7 +11,9 @@ import GHC.Generics (Generic)
 
 
 -- very simple histogram implementation
-data Histogram b a = Histogram Int (b, b) (Vector a) deriving (Generic, Show)
+-- TODO
+-- should be strict in vector?
+data Histogram b a = Histogram Int (b, b) !(Vector a) deriving (Generic, Show)
 
 instance Functor (Histogram b) where
     f `fmap` Histogram x y v = Histogram x y $ f `fmap` v
@@ -39,10 +41,22 @@ fillOne f (Histogram n (mn, mx) v) (x, w) = Histogram n (mn, mx) $ v // [(ix, f 
            | otherwise = floor (fromIntegral n * (x - mn) / (mx - mn)) + 1
 
 
+
 -- TODO
 -- is this easier with just (b -> a -> b) functions?
 -- unclear how to have Functor and Applicative instances that way.
 -- but: are they really necessary?
+-- seems I can do
+
+{-
+newtype Folder a b = Folder (b -> a -> b)
+
+instance Functor (Folder a) where
+    -- f :: b -> c
+    -- g :: b -> a -> b
+    -- x :: b
+    f `fmap` g = \x -> f `fmap` g x
+-}
 
 -- TODO
 -- should this be strict?
@@ -74,11 +88,15 @@ builder f x = Builder x (\y -> builder f (f x y))
 feedl :: Foldable f => Builder a b -> f a -> Builder a b
 feedl = foldl build
 
+feedl' :: Foldable f => Builder a b -> f a -> Builder a b
+feedl' = foldl' build
+
 feedr :: Foldable f => Builder a b -> f a -> Builder a b
 feedr = foldr (flip build)
 
 feedr' :: Foldable f => Builder a b -> f a -> Builder a b
 feedr' = foldr' (flip build)
+
 
 foldrBuilder :: Foldable f => Builder a b -> Builder (f a) b
 foldrBuilder (Builder x g) = let f y z = built (feedr (Builder y g) z) in builder f x
