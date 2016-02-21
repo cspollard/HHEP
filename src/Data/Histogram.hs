@@ -26,6 +26,9 @@ instance Functor (Histogram b) where
 binmap :: (b -> c) -> Histogram b a -> Histogram c a
 binmap f (Histogram n (b1, b2) v) = Histogram n (f b1, f b2) v
 
+-- TODO
+-- logspace
+
 instance Foldable (Histogram b) where
     foldr f b (Histogram x y v) = foldr f b v
 
@@ -50,10 +53,6 @@ modify' f ix = modify $ \v -> do
                             y <- MV.read v ix
                             write v ix $! f y
 
--- TODO
--- this appears to be building up references to old vector arrays.
--- I guess Array# is not forced to WHNF
--- use Data.Vector.modify somehow?
 fillOne :: (RealFloat b) => (a -> c -> a) -> Histogram b a -> (b, c) -> Histogram b a
 fillOne f (Histogram n (mn, mx) v) (x, w) = Histogram n (mn, mx) $ modify' (flip f w) ix v
     where
@@ -79,8 +78,6 @@ instance Functor (Folder a) where
     f `fmap` g = \x -> f `fmap` g x
 -}
 
--- TODO
--- should this be strict?
 data Builder a b = Builder { built :: !b, build :: a -> Builder a b }
 
 instance (Show b) => Show (Builder a b) where
