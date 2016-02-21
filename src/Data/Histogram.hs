@@ -3,11 +3,15 @@
 module Data.Histogram where
 
 import Data.Foldable
-import Data.Vector (Vector(..), (//), (!))
+import Data.Vector (Vector(..), indexM, (!), (//), modify)
+import Data.Vector.Mutable (write)
 import qualified Data.Vector as V
+import qualified Data.Vector.Mutable as MV
 
 import Data.Binary (Binary(..))
 import GHC.Generics (Generic)
+
+import Data.Functor.Identity (runIdentity)
 
 
 -- very simple histogram implementation
@@ -32,9 +36,22 @@ instance (Binary a, Binary b) => Binary (Histogram b a) where
 histogram :: (RealFloat b) => Int -> (b, b) -> a -> Histogram b a
 histogram n range init = Histogram n range (V.replicate (n+2) init)
 
+indexStrict :: Vector b -> Int -> b
+indexStrict v i = runIdentity $ v `indexM` i
 
+-- a version of modify that forces evaluation of the vector element at
+-- ix
+modify' :: (b -> b) -> Int -> Vector b -> Vector b
+modify' f ix = modify $ \v -> do 
+                            y <- MV.read v ix
+                            write v ix $! f y
+
+-- TODO
+-- this appears to be building up references to old vector arrays.
+-- I guess Array# is not forced to WHNF
+-- use Data.Vector.modify somehow?
 fillOne :: (RealFloat b) => (a -> c -> a) -> Histogram b a -> (b, c) -> Histogram b a
-fillOne f (Histogram n (mn, mx) v) (x, w) = Histogram n (mn, mx) $ v // [(ix, f (v ! ix) w)]
+fillOne f (Histogram n (mn, mx) v) (x, w) = Histogram n (mn, mx) $ modify' (flip f w) ix v
     where
         ix | x < mn = 0
            | x > mx = n+1
@@ -61,6 +78,9 @@ instance Functor (Folder a) where
 -- TODO
 -- should this be strict?
 data Builder a b = Builder { built :: !b, build :: a -> Builder a b }
+
+instance (Show b) => Show (Builder a b) where
+    show (Builder b _) = "Builder " ++ show b ++ " , " ++ "..."
 
 premap :: (a -> a') -> Builder a' b -> Builder a b
 premap f (Builder x g) = Builder x (fmap (premap f) (g . f))
