@@ -22,6 +22,10 @@ data Histogram b a = Histogram Int (b, b) !(Vector a) deriving (Generic, Show)
 instance Functor (Histogram b) where
     f `fmap` Histogram x y v = Histogram x y $ f `fmap` v
 
+-- bimap?
+binmap :: (b -> c) -> Histogram b a -> Histogram c a
+binmap f (Histogram n (b1, b2) v) = Histogram n (f b1, f b2) v
+
 instance Foldable (Histogram b) where
     foldr f b (Histogram x y v) = foldr f b v
 
