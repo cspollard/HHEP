@@ -106,24 +106,15 @@ instance Applicative (Builder a) where
 builder :: (b -> a -> b) -> b -> Builder a b
 builder f x = Builder x (\y -> builder f (f x y))
 
-feedl :: Foldable f => Builder a b -> f a -> Builder a b
-feedl = foldl build
+feed :: Foldable f => Builder a b -> f a -> Builder a b
+feed = foldl build
 
-feedl' :: Foldable f => Builder a b -> f a -> Builder a b
-feedl' = foldl' build
-
-feedr :: Foldable f => Builder a b -> f a -> Builder a b
-feedr = foldr (flip build)
-
-feedr' :: Foldable f => Builder a b -> f a -> Builder a b
-feedr' = foldr' (flip build)
+feed' :: Foldable f => Builder a b -> f a -> Builder a b
+feed' = foldl' build
 
 
-foldrBuilder :: Foldable f => Builder a b -> Builder (f a) b
-foldrBuilder (Builder x g) = let f y z = built (feedr (Builder y g) z) in builder f x
-
-foldlBuilder :: Foldable f => Builder a b -> Builder (f a) b
-foldlBuilder (Builder x g) = let f y z = built (feedl (Builder y g) z) in builder f x
+foldBuilder :: Foldable f => Builder a b -> Builder (f a) b
+foldBuilder (Builder x g) = let f y z = built (feed' (Builder y g) z) in builder f x
 
 histBuilder :: (RealFloat b) => (a -> c -> a) -> Histogram b a -> Builder (b, c) (Histogram b a)
 histBuilder f = builder (fillOne f)
