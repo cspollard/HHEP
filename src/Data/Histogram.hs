@@ -49,7 +49,7 @@ indexStrict v i = runIdentity $ v `indexM` i
 -- a version of modify that forces evaluation of the vector element at
 -- ix
 modify' :: (b -> b) -> Int -> Vector b -> Vector b
-modify' f ix = modify $ \v -> do 
+modify' f ix = modify $ \v -> do
                             y <- MV.read v ix
                             write v ix $! f y
 
@@ -138,7 +138,7 @@ toTuples (Histogram n (xmin, xmax) v) = map (\ix -> (f ix, v ! ix)) [1..n]
 -- TODO
 -- -- need to figure out the right way to do this.
 -- roll :: (b -> a -> b) -> b -> a -> (b, a -> b)
--- roll f x y = let x' = f x y in (x', f x') 
+-- roll f x y = let x' = f x y in (x', f x')
 --
 -- foldRoll :: b -> t a -> (b, a -> b)
 --
@@ -155,4 +155,3 @@ instance Applicative (Builder e) where
 instance Monad (Builder e) where
     (Builder h f) >>= g = g h
 -}
-
