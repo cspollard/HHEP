@@ -114,7 +114,7 @@ feed' = foldl' build
 
 
 foldBuilder :: Foldable f => Builder a b -> Builder (f a) b
-foldBuilder (Builder x g) = let f y z = built (feed' (Builder y g) z) in builder f x
+foldBuilder b@(Builder x f) = Builder x (\y -> foldBuilder $ feed' b y)
 
 histBuilder :: (RealFloat b) => (a -> c -> a) -> Histogram b a -> Builder (b, c) (Histogram b a)
 histBuilder f = builder (fillOne f)
