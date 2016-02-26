@@ -19,6 +19,7 @@ library
   exposed-modules:     Data.HEP.LorentzVector
                      , Data.HEP.PID
                      , Data.Histogram
+                     , Data.Histogram.Bin
                      -- , Data.HEP.Jet
   -- other-modules:       
   other-extensions:    DeriveGeneric, TupleSections
