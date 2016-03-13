@@ -18,6 +18,7 @@ import Data.Functor.Identity (runIdentity)
 import Data.Builder
 import Data.Histogram.Bin
 
+import Data.Monoid ((<>))
 
 -- very simple histogram implementation
 data Histogram b a = Histogram b !(Vector a) deriving (Generic, Show)
@@ -34,12 +35,12 @@ f `binmap` Histogram b v = Histogram (f b) v
 instance Foldable (Histogram b) where
     foldr f b (Histogram _ v) = foldr f b v
 
-
 instance (Binary a) => Binary (Vector a) where
     put = put . V.toList
     get = V.fromList <$> get
 
 instance (Binary a, Binary b) => Binary (Histogram b a) where
+
 
 histogram :: (Bin b) => b -> a -> Histogram b a
 histogram bins init = Histogram bins (V.replicate (nbins bins + 2) init)
@@ -70,6 +71,11 @@ underflow (Histogram _ v) = v ! 0
 overflow :: Bin b => Histogram b a -> a
 overflow (Histogram b v) = v ! (nbins b + 1)
 
+
+hadd :: (Eq b, Monoid a) => Histogram b a -> Histogram b a -> Maybe (Histogram b a)
+hadd (Histogram b v) (Histogram b' v')
+        | b == b' = Just $ Histogram b (V.zipWith (<>) v v')
+        | otherwise = Nothing
 
 toTuples :: IntervalBin b => Histogram b a -> [((BinValue b, BinValue b), a)]
 toTuples (Histogram bins v) = zip (binEdges bins) $ map (v !) [1..n]

@@ -12,7 +12,7 @@ class Bin b where
     idx :: b -> BinValue b -> Int
     nbins :: b -> Int
 
-data Bin1D a = Bin1D Int (a, a) deriving (Generic, Show)
+data Bin1D a = Bin1D Int (a, a) deriving (Generic, Show, Eq)
 
 instance RealFrac a => Bin (Bin1D a) where
     type BinValue (Bin1D a) = a
