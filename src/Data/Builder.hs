@@ -55,4 +55,3 @@ feed' = foldl' build
 
 foldBuilder :: Foldable f => Builder a b -> Builder (f a) b
 foldBuilder b@(Builder x f) = Builder x (\y -> foldBuilder $ feed' b y)
-
