@@ -1,9 +1,8 @@
-{-# LANGUAGE DeriveGeneric
-           , TypeFamilies #-}
+{-# LANGUAGE DeriveGeneric, TypeFamilies #-}
 
 module Data.Histogram.Bin where
 
-import Data.Binary (Binary(..))
+import Data.Serialize (Serialize(..))
 import GHC.Generics (Generic)
 import Control.Arrow ((***))
 
@@ -27,7 +26,7 @@ instance RealFrac a => Bin (Bin1D a) where
 instance Functor Bin1D where
     f `fmap` Bin1D n (mn, mx) = Bin1D n (f mn, f mx)
 
-instance (Binary a) => Binary (Bin1D a) where
+instance (Serialize a) => Serialize (Bin1D a) where
 
 
 data Bin2D a b = Bin2D (Bin1D a) (Bin1D b) deriving (Generic, Show)
@@ -40,7 +39,7 @@ instance (RealFrac a, RealFrac b) => Bin (Bin2D a b) where
     nbins (Bin2D bx by) = (nbins bx + 1) * (nbins by + 1)
 
 
-instance (Binary a, Binary b) => Binary (Bin2D a b) where
+instance (Serialize a, Serialize b) => Serialize (Bin2D a b) where
 
 
 class Bin b => IntervalBin b where

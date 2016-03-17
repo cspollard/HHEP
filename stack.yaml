@@ -2,9 +2,5 @@ flags: {}
 extra-package-dbs: []
 packages:
 - '.'
-extra-deps:
-- data-ordlist-0.4.7.0
-- mtl-2.2.1
-- primitive-0.6.1.0
-- vector-0.10.12.3
-resolver: ghc-7.10.3
+extra-deps: []
+resolver: lts-5.8

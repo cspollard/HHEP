@@ -10,13 +10,15 @@ import Data.Vector.Mutable (write)
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as MV
 
-import Data.Binary (Binary(..))
+import Data.Serialize (Serialize(..))
 import GHC.Generics (Generic)
 
 import Data.Functor.Identity (runIdentity)
 
 import Data.Builder
 import Data.Histogram.Bin
+
+import Data.Serialize.Vector
 
 import Data.Monoid ((<>))
 
@@ -35,11 +37,8 @@ f `binmap` Histogram b v = Histogram (f b) v
 instance Foldable (Histogram b) where
     foldr f b (Histogram _ v) = foldr f b v
 
-instance (Binary a) => Binary (Vector a) where
-    put = put . V.toList
-    get = V.fromList <$> get
 
-instance (Binary a, Binary b) => Binary (Histogram b a) where
+instance (Serialize a, Serialize b) => Serialize (Histogram b a) where
 
 
 histogram :: (Bin b) => b -> a -> Histogram b a

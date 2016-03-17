@@ -2,7 +2,7 @@
 
 module Data.HEP.LorentzVector where
 
-import Data.Binary
+import Data.Serialize
 import GHC.Generics (Generic)
 
 import Data.Monoid
@@ -108,7 +108,7 @@ lvM2 = (-) <$> lvE2 <*> lvP2
 data PtEtaPhiE = PtEtaPhiE Double Double Double Double
     deriving (Show, Read, Generic)
 
-instance Binary PtEtaPhiE
+instance Serialize PtEtaPhiE
 
 instance LorentzVector PtEtaPhiE where
     lvPt (PtEtaPhiE pt _ _ _) = pt
@@ -128,7 +128,7 @@ type PtEtaPhiEs = [PtEtaPhiE]
 data XYZT = XYZT Double Double Double Double
     deriving (Show, Generic, Read)
 
-instance Binary XYZT
+instance Serialize XYZT
 
 type XYZTs = [XYZT]
 
