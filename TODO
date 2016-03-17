@@ -1,2 +1,6 @@
 LV methods:
 dPhi, dEta, etc
+
+Binary -> Cereal
+
+rerun cabal init and remake stack yaml file.
