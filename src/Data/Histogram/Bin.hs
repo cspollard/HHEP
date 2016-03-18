@@ -44,13 +44,13 @@ instance RealFrac a => IntervalBin (Bin1D a) where
 instance (Bin a, Bin b) => Bin (a :. b) where
     type BinValue (a :. b) = (BinValue a :. BinValue b)
 
-    (bx :. by) `idx` (x, y) = (bx `idx` x) + (nbins bx + 1) * (by `idx` y)
+    (bx :. by) `idx` (x :. y) = (bx `idx` x) + (nbins bx + 1) * (by `idx` y)
 
     nbins (bx :. by) = (nbins bx + 1) * (nbins by + 1)
 
 
 instance (IntervalBin a, IntervalBin b) => IntervalBin (a :. b) where
-    binEdges (bx :. by) = [((x0, y0), (x, y)) | (x0, x) <- binEdges bx, (y0, y) <- binEdges by]
+    binEdges (bx :. by) = [((x0 :. y0), (x :. y)) | (x0, x) <- binEdges bx, (y0, y) <- binEdges by]
 
 
 -- convenience types
