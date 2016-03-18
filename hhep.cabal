@@ -17,12 +17,13 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     Data.Builder
-                     , Data.Dist
                      , Data.Histogram
+                     , Data.Histogram.Bin
+                     , Data.Histogram.Dimension
+                     , Data.Histogram.Distribution
                      -- , Data.HEP.Jet
                      , Data.HEP.LorentzVector
                      , Data.HEP.PID
-                     , Data.Histogram.Bin
                      , Data.Serialize.Vector
   -- other-modules:       
   other-extensions:    DeriveGeneric, TupleSections, TypeFamilies

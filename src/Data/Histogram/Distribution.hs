@@ -1,14 +1,12 @@
 {-# LANGUAGE TypeOperators, TypeFamilies #-}
 
-module Data.Dist where
+module Data.Histogram.Distribution where
 
 -- N-dimensional distributions
 
 import Data.Monoid
+import Data.Histogram.Dimension
 
--- taken directly from the Repa library
-infixl 3 :.
-data head :. tail = !head :. !tail
 
 -- stores enough info to get the 2nd moment of a distribution
 -- could use laziness to get the higher moments, but seems inefficient
@@ -41,7 +39,7 @@ class ScaleW s where
     scaleW :: s -> W s -> s
 
 
--- this is annoying, but I guess necessary...
+-- this is annoying but I guess necessary...
 instance ScaleW Double where
     type W Double = Double 
     scaleW = (*)
