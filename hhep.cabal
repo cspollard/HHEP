@@ -17,6 +17,7 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     Data.Builder
+                     , Data.Dist
                      , Data.Histogram
                      -- , Data.HEP.Jet
                      , Data.HEP.LorentzVector
