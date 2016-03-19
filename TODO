@@ -1,4 +1,4 @@
 LV methods:
 dPhi, dEta, etc
 
-cleanup with hlint
+Check logfile for redundant imports, etc
