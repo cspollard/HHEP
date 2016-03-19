@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, TypeFamilies #-}
+{-# LANGUAGE DeriveGeneric, TypeFamilies, TypeOperators #-}
 
 module Data.Histogram ( Histogram(..)
                       , binmap
@@ -55,9 +55,6 @@ instance Foldable (Histogram b) where
 
 instance (Serialize a, Serialize b) => Serialize (Histogram b a) where
 
-
-
-
 histogram :: Bin b => b -> a -> Histogram b a
 histogram bins init = Histogram bins (V.replicate (nbins bins + 2) init)
 
@@ -70,8 +67,6 @@ modify' f ix = modify $ \v -> do
                             write v ix $! f y
 
 
--- TODO
--- this needs to be validated carefully!
 instance ScaleW a => ScaleW (Histogram b a) where
     type W (Histogram b a) = W a
     h `scaleW` w = (`scaleW` w) `fmap` h
@@ -110,5 +105,3 @@ toTuples (Histogram bins v) = zip (binEdges bins) $ map (v !) [1..n]
 
 -- convenience types
 type Histo1D = Histogram (Bin1D Double) (Dist1D Double)
--- type Histo2D = Histogram (Bin2D Double) (Dist2D Double)
--- type Histo3D = Histogram (Bin3D Double) (Dist3D Double)

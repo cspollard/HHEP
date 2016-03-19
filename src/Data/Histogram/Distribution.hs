@@ -83,9 +83,6 @@ class Distribution s => ScaleX s where
     scaleX :: s -> X s -> s
 
 
--- this is annoying but I guess necessary...
-
-
 {-
 instance Num a => ScaleX (DistWX a) where
     -- possibly quite inefficient...

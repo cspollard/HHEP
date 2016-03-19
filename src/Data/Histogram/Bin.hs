@@ -18,25 +18,40 @@ class Bin b => IntervalBin b where
 
 
 -- constant interval binning in one dimension
-data Bin1D a = Bin1D Int (a, a) deriving (Generic, Show, Eq)
+data Bin0D a = Bin0D deriving (Generic, Show, Eq)
 
-instance (Serialize a) => Serialize (Bin1D a) where
+data ConstBin a = ConstBin Int (a, a) deriving (Generic, Show, Eq)
 
-instance Functor Bin1D where
-    f `fmap` Bin1D n (mn, mx) = Bin1D n (f mn, f mx)
+instance (Serialize a) => Serialize (Bin0D a) where
+instance (Serialize a) => Serialize (ConstBin a) where
 
-instance RealFrac a => Bin (Bin1D a) where
-    type BinValue (Bin1D a) = a
+instance Functor Bin0D where
+    f `fmap` Bin0D = Bin0D
 
-    Bin1D n (mn, mx) `idx` x | x < mn = 0
+instance Functor ConstBin where
+    f `fmap` ConstBin n (mn, mx) = ConstBin n (f mn, f mx)
+
+
+instance Bin (Bin0D a) where
+    type BinValue (Bin0D a) = Z
+    idx _ = const 0
+    nbins = const 0
+
+instance RealFrac a => Bin (ConstBin a) where
+    type BinValue (ConstBin a) = a
+
+    ConstBin n (mn, mx) `idx` x | x < mn = 0
                              | x > mx = n+1
                              | otherwise = floor (fromIntegral n * (x - mn) / (mx - mn)) + 1
 
-    nbins (Bin1D n _) = n
+    nbins (ConstBin n _) = n
 
 
-instance RealFrac a => IntervalBin (Bin1D a) where
-    binEdges (Bin1D n (xmin, xmax)) = take n $ iterate (\(_, b) -> (b, b+step)) (xmin, xmin+step)
+instance IntervalBin (Bin0D a) where
+    binEdges = const [(Z, Z)]
+
+instance RealFrac a => IntervalBin (ConstBin a) where
+    binEdges (ConstBin n (xmin, xmax)) = take n $ iterate (\(_, b) -> (b, b+step)) (xmin, xmin+step)
         where
             step = (xmax - xmin) / (fromIntegral n)
 
@@ -54,5 +69,6 @@ instance (IntervalBin a, IntervalBin b) => IntervalBin (a :. b) where
 
 
 -- convenience types
-type Bin2D a = Bin1D a :. Bin1D a
-type Bin3D a = Bin2D a :. Bin1D a
+type Bin1D a = Bin0D a :. ConstBin a
+type Bin2D a = Bin1D a :. ConstBin a
+type Bin3D a = Bin2D a :. ConstBin a
