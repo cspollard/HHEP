@@ -68,6 +68,9 @@ instance (IntervalBin a, IntervalBin b) => IntervalBin (a :. b) where
     binEdges (bx :. by) = [((x0 :. y0), (x :. y)) | (x0, x) <- binEdges bx, (y0, y) <- binEdges by]
 
 
+bin1D :: Int -> (a, a) -> Bin1D a
+bin1D n = (Bin0D :.) . ConstBin n
+
 -- convenience types
 type Bin1D a = Bin0D a :. ConstBin a
 type Bin2D a = Bin1D a :. ConstBin a

@@ -1,15 +1,15 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DeriveGeneric, TypeOperators #-}
 
 module Data.TypeList where
 
 import Data.Monoid
+import GHC.Generics
 
 -- taken directly from the Repa library
-infixl 3 :.
 
-data head :. tail = !head :. !tail
+-- the null type
+data Z = Z deriving (Generic, Show, Eq)
 
-data Z = Z
 
 instance Monoid Z where
     mempty = Z
@@ -19,3 +19,7 @@ instance (Monoid a, Monoid b) => Monoid (a :. b) where
     mempty = mempty :. mempty
     (x :. y) `mappend` (x' :. y') =
             (x <> x') :. (y <> y')
+
+
+infixl 3 :.
+data head :. tail = !head :. !tail deriving (Generic, Show, Eq)
