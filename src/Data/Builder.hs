@@ -23,7 +23,7 @@ instance Applicative (Builder a) where
 
 
 builder :: (b -> a -> b) -> b -> Builder a b
-builder f x = Builder x (builder f . fx)
+builder f x = Builder x (builder f . f x)
 
 feed :: Foldable f => Builder a b -> f a -> Builder a b
 feed = foldl build
