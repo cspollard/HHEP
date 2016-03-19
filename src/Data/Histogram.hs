@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric, TypeFamilies #-}
 
 module Data.Histogram ( Histogram(..)
                       , binmap
@@ -8,7 +8,7 @@ module Data.Histogram ( Histogram(..)
                       , integral , underflow , overflow
                       , hadd
                       , toTuples
-                      , Histo1D, Histo2D, Histo3D
+                      , Histo1D
                       , module Data.TypeList
                       , module Data.Histogram.Bin
                       , module Data.Histogram.Distribution
@@ -58,8 +58,14 @@ instance Foldable (Histogram b) where
 instance (Serialize a, Serialize b) => Serialize (Histogram b a) where
 
 
+instance ScaleW a => ScaleW (Histogram b a) where
+    type W (Histogram b a) = W a
+    h `scaleW` w = (`scaleW` w) `fmap` h
+
+
 histogram :: Bin b => b -> a -> Histogram b a
 histogram bins init = Histogram bins (V.replicate (nbins bins + 2) init)
+
 
 -- a version of modify that forces evaluation of the vector element at
 -- ix
@@ -68,9 +74,11 @@ modify' f ix = modify $ \v -> do
                             y <- MV.read v ix
                             write v ix $! f y
 
+
 -- fill one item in a histogram with a combining function
 fillOneF :: (Bin b) => (a -> c -> a) -> Histogram b a -> (BinValue b, c) -> Histogram b a
 fillOneF f (Histogram b v) (x, w) = Histogram b $ modify' (flip f w) (idx b x) v
+
 
 -- fill one item in a histogram with a combining function
 fillOne :: (Bin b, Monoid a) => Histogram b a -> (BinValue b, a) -> Histogram b a
@@ -109,5 +117,5 @@ toTuples (Histogram bins v) = zip (binEdges bins) $ map (v !) [1..n]
 
 -- convenience types
 type Histo1D = Histogram (Bin1D Double) (Dist1D Double)
-type Histo2D = Histogram (Bin2D Double) (Dist2D Double)
-type Histo3D = Histogram (Bin3D Double) (Dist3D Double)
+-- type Histo2D = Histogram (Bin2D Double) (Dist2D Double)
+-- type Histo3D = Histogram (Bin3D Double) (Dist3D Double)
