@@ -29,17 +29,17 @@ premap f (Builder x g) = Builder x (fmap (premap f) (g . f))
 (<<-) = flip premap
 
 instance Functor (Builder a) where
-    fmap f (Builder x g) = Builder (f x) (\y -> fmap f (g y))
+    fmap f (Builder x g) = Builder (f x) (fmap f . g)
 
 instance Applicative (Builder a) where
-    pure x = builder const x
+    pure = builder const
     Builder f g <*> Builder x y = Builder (f x) (\w -> g w <*> y w)
 
 -- instance Monad (Builder a)
 
 
 builder :: (b -> a -> b) -> b -> Builder a b
-builder f x = Builder x (\y -> builder f (f x y))
+builder f x = Builder x (builder f . fx)
 
 feed :: Foldable f => Builder a b -> f a -> Builder a b
 feed = foldl build
@@ -48,4 +48,4 @@ feed' :: Foldable f => Builder a b -> f a -> Builder a b
 feed' = foldl' build
 
 foldBuilder :: Foldable f => Builder a b -> Builder (f a) b
-foldBuilder b@(Builder x f) = Builder x (\y -> foldBuilder $ feed' b y)
+foldBuilder b@(Builder x f) = Builder x (foldBuilder . feed' b)

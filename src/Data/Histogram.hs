@@ -1,19 +1,17 @@
 {-# LANGUAGE DeriveGeneric, TypeFamilies, TypeOperators #-}
 
-module Data.Histogram ( Histogram(..)
-                      , binmap
+
+module Data.Histogram( Histogram(..)
                       , histogram, distBuilder
+                      , binmap
                       , integral, underflow, overflow
-                      , hadd
-                      , toTuples
-                      , Histo1D
-                      , module Data.TypeList
-                      , module Data.Histogram.Bin
-                      , module Data.Histogram.Distribution
-                      , module Data.Builder
-                      ) where
+                      , hadd, toTuples
+                      , Histo1D, module X) where
 
-
+import Data.TypeList as X
+import Data.Builder as X
+import Data.Histogram.Bin as X
+import Data.Histogram.Distribution as X
 
 import Data.Foldable
 import Data.Vector (Vector(..), indexM, (!), (//), modify)
@@ -30,11 +28,6 @@ import Data.Serialize.Vector
 
 import Data.Monoid ((<>))
 
-import Data.TypeList
-import Data.Builder
-
-import Data.Histogram.Bin
-import Data.Histogram.Distribution
 
 -- very simple histogram implementation
 data Histogram b a = Histogram b !(Vector a) deriving (Generic, Show)

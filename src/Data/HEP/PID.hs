@@ -75,7 +75,7 @@ neutrinos = fromList [eNeutrino, -eNeutrino,
                       mNeutrino, -mNeutrino,
                       tNeutrino, -tNeutrino]
 
-leptons = union chargedLeptons neutrinos
+leptons = chargedLeptons `union` neutrinos
 
 
 
@@ -88,7 +88,7 @@ upTypeQuarks = fromList [up, -up,
                          top, -top]
 
 
-quarks = union downTypeQuarks upTypeQuarks
+quarks = downTypeQuarks `union` upTypeQuarks
 
 partons = insert gluon quarks
 
