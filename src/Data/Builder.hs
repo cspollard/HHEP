@@ -2,22 +2,6 @@ module Data.Builder where
 
 import Data.Foldable
 
--- TODO
--- is this easier with just (b -> a -> b) functions?
--- unclear how to have Functor and Applicative instances that way.
--- but: are they really necessary?
--- seems I can do
-
-{-
-newtype Folder a b = Folder (b -> a -> b)
-
-instance Functor (Folder a) where
-    -- f :: b -> c
-    -- g :: b -> a -> b
-    -- x :: b
-    f `fmap` g = \x -> f `fmap` g x
--}
-
 data Builder a b = Builder { built :: !b, build :: a -> Builder a b }
 
 instance (Show b) => Show (Builder a b) where
