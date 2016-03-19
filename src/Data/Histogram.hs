@@ -1,8 +1,21 @@
 {-# LANGUAGE DeriveGeneric #-}
 
-module Data.Histogram where
+module Data.Histogram ( Histogram(..)
+                      , binmap
+                      , histogram
+                      , fillOneF , fillOne
+                      , histBuilderF, histBuilder
+                      , integral , underflow , overflow
+                      , hadd
+                      , toTuples
+                      , Histo1D, Histo2D, Histo3D
+                      , module Data.TypeList
+                      , module Data.Histogram.Bin
+                      , module Data.Histogram.Distribution
+                      , module Data.Builder
+                      ) where
 
-import Control.Arrow ((&&&))
+
 
 import Data.Foldable
 import Data.Vector (Vector(..), indexM, (!), (//), modify)
@@ -15,14 +28,15 @@ import GHC.Generics (Generic)
 
 import Data.Functor.Identity (runIdentity)
 
-import Data.Builder
-import Data.Histogram.Bin
-import Data.Histogram.Dimension
-import Data.Histogram.Distribution
-
 import Data.Serialize.Vector
 
 import Data.Monoid ((<>))
+
+import Data.TypeList
+import Data.Builder
+
+import Data.Histogram.Bin
+import Data.Histogram.Distribution
 
 -- very simple histogram implementation
 data Histogram b a = Histogram b !(Vector a) deriving (Generic, Show)
@@ -55,12 +69,19 @@ modify' f ix = modify $ \v -> do
                             write v ix $! f y
 
 -- fill one item in a histogram with a combining function
-fillOne :: (Bin b) => (a -> c -> a) -> Histogram b a -> (BinValue b, c) -> Histogram b a
-fillOne f (Histogram b v) (x, w) = Histogram b $ modify' (flip f w) (idx b x) v
+fillOneF :: (Bin b) => (a -> c -> a) -> Histogram b a -> (BinValue b, c) -> Histogram b a
+fillOneF f (Histogram b v) (x, w) = Histogram b $ modify' (flip f w) (idx b x) v
+
+-- fill one item in a histogram with a combining function
+fillOne :: (Bin b, Monoid a) => Histogram b a -> (BinValue b, a) -> Histogram b a
+fillOne = fillOneF (<>)
 
 
-histBuilder :: (Bin b) => (a -> c -> a) -> Histogram b a -> Builder (BinValue b, c) (Histogram b a)
-histBuilder f = builder (fillOne f)
+histBuilderF :: (Bin b) => (a -> c -> a) -> Histogram b a -> Builder (BinValue b, c) (Histogram b a)
+histBuilderF f = builder (fillOneF f)
+
+histBuilder :: (Bin b, Monoid a) => Histogram b a -> Builder (BinValue b, a) (Histogram b a)
+histBuilder = builder fillOne
 
 
 integral :: Monoid a => Histogram b a -> a
@@ -89,3 +110,4 @@ toTuples (Histogram bins v) = zip (binEdges bins) $ map (v !) [1..n]
 -- convenience types
 type Histo1D = Histogram (Bin1D Double) (Dist1D Double)
 type Histo2D = Histogram (Bin2D Double) (Dist2D Double)
+type Histo3D = Histogram (Bin3D Double) (Dist3D Double)

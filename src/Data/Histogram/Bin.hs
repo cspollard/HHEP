@@ -6,7 +6,7 @@ import Data.Serialize (Serialize(..))
 import GHC.Generics (Generic)
 import Control.Arrow ((***))
 
-import Data.Histogram.Dimension
+import Data.TypeList
 
 class Bin b where
     type BinValue b

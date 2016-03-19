@@ -5,7 +5,7 @@ module Data.Histogram.Distribution where
 -- N-dimensional distributions
 
 import Data.Monoid
-import Data.Histogram.Dimension
+import Data.TypeList
 
 
 -- stores enough info to get the 2nd moment of a distribution
@@ -17,6 +17,10 @@ type Dist0D a = DistW a
 type Dist1D a = Dist0D a :. DistWX a
 type Dist2D a = Dist1D a :. DistWX a
 type Dist3D a = Dist2D a :. DistWX a
+
+
+-- TODO
+-- convert (w, x) pair to a distribution
 
 instance Num a => Monoid (DistW a) where
     mempty = DistW mempty mempty mempty

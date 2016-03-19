@@ -19,12 +19,12 @@ library
   exposed-modules:     Data.Builder
                      , Data.Histogram
                      , Data.Histogram.Bin
-                     , Data.Histogram.Dimension
                      , Data.Histogram.Distribution
                      -- , Data.HEP.Jet
                      , Data.HEP.LorentzVector
                      , Data.HEP.PID
                      , Data.Serialize.Vector
+                     , Data.TypeList
   -- other-modules:       
   other-extensions:    DeriveGeneric, TupleSections, TypeFamilies
   build-depends:       base >=4.8 && <4.9
