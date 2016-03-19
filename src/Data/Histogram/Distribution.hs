@@ -1,9 +1,9 @@
 {-# LANGUAGE TypeOperators, TypeFamilies #-}
 
 module Data.Histogram.Distribution (
-                                     DistW(..), DistWX(..)
+                                     Dist0(..), DistWX(..)
                                    , Dist0D, Dist1D
-                                   , ScaleW(..)
+                                   , ScaleW(..), Distribution(..)
                                    , module Data.TypeList
                                    ) where
 
@@ -15,8 +15,8 @@ import Data.TypeList
 
 -- stores enough info to get the 2nd moment of a distribution
 -- could use laziness to get the higher moments, but seems inefficient
-data DistW a = DistW { sumw :: !(Sum a), sumw2 :: !(Sum a), nentries :: !(Sum Int) }
-data DistWX a = DistWX { sumwx :: !(Sum a), sumwx2 :: !(Sum a) }
+data Dist0 a = Dist0 { sumw :: !a, sumw2 :: !a, nentries :: !Int }
+data DistWX a = DistWX { sumwx :: !a, sumwx2 :: !a }
 
 
 -- TODO
@@ -26,71 +26,67 @@ data DistWX a = DistWX { sumwx :: !(Sum a), sumwx2 :: !(Sum a) }
 -- look into GHC.TypeLits
 -- -XDataKinds
 
-type Dist0D a = DistW a
+type Dist0D a = Dist0 a
 type Dist1D a = Dist0D a :. DistWX a
 
-instance Num a => Monoid (DistW a) where
-    mempty = DistW mempty mempty mempty
-    DistW sw sw2 ne `mappend` DistW sw' sw2' ne' =
-            DistW (sw <> sw') (sw2 <> sw2') (ne <> ne')
+instance Num a => Monoid (Dist0 a) where
+    mempty = Dist0 0 0 0
+    Dist0 sw sw2 ne `mappend` Dist0 sw' sw2' ne' =
+            Dist0 (sw + sw') (sw2 + sw2') (ne + ne')
 
 instance Num a => Monoid (DistWX a) where
-    mempty = DistWX mempty mempty
+    mempty = DistWX 0 0
     DistWX swx swx2 `mappend` DistWX swx' swx2' =
-            DistWX (swx <> swx') (swx2 <> swx2')
-
-
-instance Num a => Distribution (DistW a) where
-    type X (DistW a) = a
-    d `fill` w = d <> fill mempty w
-
-instance Num a => Distribution (DistWX a) where
-    type X (DistWX a) = a
-    d `fill` x = d <> fill mempty x
-
-instance (Distribution a, Distribution b, ScaleW b, X a ~ W b) => Distribution (a :. b) where
-    type X (a :. b) = X a :. X b
-    (dw :. dxs) `fill` (w :. xs) = fill dw w :. (fill dxs xs `scaleW` w)
-
+            DistWX (swx + swx') (swx2 + swx2')
 
 
 class ScaleW s where
     type W s :: *
     scaleW :: s -> W s -> s
 
-class Distribution d where
+
+instance Num a => ScaleW (Dist0 a) where
+    type W (Dist0 a) = a
+    Dist0 sw sw2 ne `scaleW` w =
+            Dist0 (sw*w) (sw2*w*w) ne
+
+instance Num a => ScaleW (DistWX a) where
+    type W (DistWX a) = a
+    DistWX swx swx2 `scaleW` w =
+            DistWX (swx*w) (swx2*w)
+
+instance (ScaleW a, ScaleW b, W a ~ W b) => ScaleW (a :. b) where
+    type W (a :. b) = W a
+    (dxs :. dy) `scaleW` w = (dxs `scaleW` w) :. (dy `scaleW` w)
+
+
+class ScaleW d => Distribution d where
     type X d :: *
-    fill :: d -> X d -> d
+    fill :: d -> W d -> X d -> d
+
+
+instance Num a => Distribution (Dist0 a) where
+    type X (Dist0 a) = Z
+    fill (Dist0 sw sw2 n) w _ = Dist0 (sw+w) (sw2+w*w) (n+1)
+
+instance Num a => Distribution (DistWX a) where
+    type X (DistWX a) = a
+    fill (DistWX swx swx2) w x = DistWX (swx+w*x) (swx2+w*x*x)
+
+instance (Distribution a, Distribution b, W a ~ W b) => Distribution (a :. b) where
+    type X (a :. b) = X a :. X b
+    fill (dxs :. dx) w (xs :. x) = fill dxs w xs :. fill dx w x
+
+
 
 class Distribution s => ScaleX s where
     scaleX :: s -> X s -> s
 
 
 -- this is annoying but I guess necessary...
-instance ScaleW Double where
-    type W Double = Double 
-    scaleW = (*)
 
 
-instance ScaleW Int where
-    type W Int = Int 
-    scaleW = (*)
-
-
-instance ScaleW a => ScaleW (DistW a) where
-    type W (DistW a) = W a
-
-    -- possibly quite inefficient...
-    DistW (Sum sw) (Sum sw2) ne `scaleW` w =
-            DistW (Sum $ sw `scaleW` w) (Sum $ sw2 `scaleW` w `scaleW` w) ne
-
-
-instance ScaleW a => ScaleW (DistWX a) where
-    type W (DistWX a) = W a
-    DistWX (Sum swx) (Sum swx2) `scaleW` w =
-            DistWX (Sum $ swx `scaleW` w) (Sum $ swx2 `scaleW` w)
-
-
+{-
 instance Num a => ScaleX (DistWX a) where
     -- possibly quite inefficient...
     DistWX (Sum swx) (Sum swx2) `scaleX` x =
@@ -99,11 +95,8 @@ instance Num a => ScaleX (DistWX a) where
 
 -- the last two are necessary for (a :. b) to be a Distribution
 -- TODO
--- I'm not confident that DistW a :. DistWX a is going to work
+-- I'm not confident that Dist0 a :. DistWX a is going to work
 -- correctly here.
 instance (ScaleX a, ScaleX b, ScaleW b, X a ~ W b) => ScaleX (a :. b) where
     (dx :. dy) `scaleX` (x :. y) = (dx `scaleX` x) :. (dy `scaleX` y)
-
-
--- scale the appropriate dimension 
--- scaleX :: Num a => (Z :. n :. n') -> (Dist0 a :. d) -> a -> (Dist0 a :. d)
+-}

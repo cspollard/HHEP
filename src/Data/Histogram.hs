@@ -2,10 +2,8 @@
 
 module Data.Histogram ( Histogram(..)
                       , binmap
-                      , histogram
-                      , fillOneF , fillOne
-                      , histBuilderF, histBuilder
-                      , integral , underflow , overflow
+                      , histogram, distBuilder
+                      , integral, underflow, overflow
                       , hadd
                       , toTuples
                       , Histo1D
@@ -58,9 +56,6 @@ instance Foldable (Histogram b) where
 instance (Serialize a, Serialize b) => Serialize (Histogram b a) where
 
 
-instance ScaleW a => ScaleW (Histogram b a) where
-    type W (Histogram b a) = W a
-    h `scaleW` w = (`scaleW` w) `fmap` h
 
 
 histogram :: Bin b => b -> a -> Histogram b a
@@ -75,21 +70,19 @@ modify' f ix = modify $ \v -> do
                             write v ix $! f y
 
 
--- fill one item in a histogram with a combining function
-fillOneF :: (Bin b) => (a -> c -> a) -> Histogram b a -> (BinValue b, c) -> Histogram b a
-fillOneF f (Histogram b v) (x, w) = Histogram b $ modify' (flip f w) (idx b x) v
+-- TODO
+-- this needs to be validated carefully!
+instance ScaleW a => ScaleW (Histogram b a) where
+    type W (Histogram b a) = W a
+    h `scaleW` w = (`scaleW` w) `fmap` h
+
+instance (Bin b, Distribution a, BinValue b ~ X a) => Distribution (Histogram b a) where
+    type X (Histogram b a) = X a
+    fill (Histogram b v) w xs = Histogram b $ modify' (\d -> fill d w xs) (idx b xs) v
 
 
--- fill one item in a histogram with a combining function
-fillOne :: (Bin b, Monoid a) => Histogram b a -> (BinValue b, a) -> Histogram b a
-fillOne = fillOneF (<>)
-
-
-histBuilderF :: (Bin b) => (a -> c -> a) -> Histogram b a -> Builder (BinValue b, c) (Histogram b a)
-histBuilderF f = builder (fillOneF f)
-
-histBuilder :: (Bin b, Monoid a) => Histogram b a -> Builder (BinValue b, a) (Histogram b a)
-histBuilder = builder fillOne
+distBuilder :: Distribution a => a -> Builder (W a, X a) a
+distBuilder = builder (\d (w, x) -> fill d w x)
 
 
 integral :: Monoid a => Histogram b a -> a
