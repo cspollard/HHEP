@@ -53,7 +53,7 @@ instance IntervalBin (Bin0D a) where
 instance RealFrac a => IntervalBin (ConstBin a) where
     binEdges (ConstBin n (xmin, xmax)) = take n $ iterate (\(_, b) -> (b, b+step)) (xmin, xmin+step)
         where
-            step = (xmax - xmin) / (fromIntegral n)
+            step = (xmax - xmin) / fromIntegral n
 
 
 instance (Bin a, Bin b) => Bin (a :. b) where
@@ -65,7 +65,7 @@ instance (Bin a, Bin b) => Bin (a :. b) where
 
 
 instance (IntervalBin a, IntervalBin b) => IntervalBin (a :. b) where
-    binEdges (bx :. by) = [((x0 :. y0), (x :. y)) | (x0, x) <- binEdges bx, (y0, y) <- binEdges by]
+    binEdges (bx :. by) = [(x0 :. y0, x :. y) | (x0, x) <- binEdges bx, (y0, y) <- binEdges by]
 
 
 bin1D :: Int -> (a, a) -> Bin1D a
