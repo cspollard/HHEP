@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators, TypeFamilies #-}
+{-# LANGUAGE DeriveGeneric, TypeOperators, TypeFamilies #-}
 
 module Data.Histogram.Distribution (
                                      Dist0(..), DistWX(..)
@@ -7,8 +7,8 @@ module Data.Histogram.Distribution (
                                    , module Data.TypeList
                                    ) where
 
--- N-dimensional distributions
-
+import GHC.Generics
+import Data.Serialize
 import Data.Monoid
 import Data.TypeList
 
@@ -16,7 +16,13 @@ import Data.TypeList
 -- stores enough info to get the 2nd moment of a distribution
 -- could use laziness to get the higher moments, but seems inefficient
 data Dist0 a = Dist0 { sumw :: !a, sumw2 :: !a, nentries :: !Int }
+    deriving (Generic, Show, Eq, Ord)
+
 data DistWX a = DistWX { sumwx :: !a, sumwx2 :: !a }
+    deriving (Generic, Show, Eq, Ord)
+
+instance Serialize a => Serialize (Dist0 a) where
+instance Serialize a => Serialize (DistWX a) where
 
 
 -- TODO
@@ -38,7 +44,6 @@ instance Num a => Monoid (DistWX a) where
     mempty = DistWX 0 0
     DistWX swx swx2 `mappend` DistWX swx' swx2' =
             DistWX (swx + swx') (swx2 + swx2')
-
 
 class ScaleW s where
     type W s :: *
