@@ -4,8 +4,6 @@ module Data.Histogram.Bin where
 
 import Data.Serialize (Serialize(..))
 import GHC.Generics (Generic)
-import Control.Arrow ((***))
-
 import Data.TypeList
 
 class Bin b where
@@ -26,7 +24,7 @@ instance (Serialize a) => Serialize (Bin0D a) where
 instance (Serialize a) => Serialize (ConstBin a) where
 
 instance Functor Bin0D where
-    f `fmap` Bin0D = Bin0D
+    _ `fmap` Bin0D = Bin0D
 
 instance Functor ConstBin where
     f `fmap` ConstBin n (mn, mx) = ConstBin n (f mn, f mx)

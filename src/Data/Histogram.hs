@@ -1,20 +1,19 @@
-{-# LANGUAGE DeriveGeneric, TypeFamilies, TypeOperators #-}
+{-# LANGUAGE DeriveGeneric, TypeFamilies, TypeOperators, RankNTypes #-}
 
 
 module Data.Histogram( Histogram(..)
-                      , histogram, distBuilder
+                      , histogram
                       , binmap
                       , integral, underflow, overflow
                       , hadd, toTuples
                       , Histo1D, module X) where
 
 import Data.TypeList as X
-import Data.Builder as X
 import Data.Histogram.Bin as X
 import Data.Histogram.Distribution as X
 
 import Data.Foldable
-import Data.Vector (Vector(..), indexM, (!), (//), modify)
+import Data.Vector (Vector, (!), modify)
 import Data.Vector.Mutable (write)
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as MV
@@ -22,12 +21,13 @@ import qualified Data.Vector.Mutable as MV
 import Data.Serialize (Serialize(..))
 import GHC.Generics (Generic)
 
-import Data.Functor.Identity (runIdentity)
+import Data.Serialize.Vector ()
 
-import Data.Serialize.Vector
+import Data.Conduit
+import qualified Data.Conduit.List as CL
+import Control.Monad.Catch (MonadThrow(..))
 
 import Data.Monoid ((<>))
-
 
 -- very simple histogram implementation
 data Histogram b a = Histogram b !(Vector a) deriving (Generic, Show)
@@ -49,7 +49,7 @@ instance Foldable (Histogram b) where
 instance (Serialize a, Serialize b) => Serialize (Histogram b a) where
 
 histogram :: Bin b => b -> a -> Histogram b a
-histogram bins init = Histogram bins (V.replicate (nbins bins + 2) init)
+histogram bins initial = Histogram bins (V.replicate (nbins bins + 2) initial)
 
 
 -- a version of modify that forces evaluation of the vector element at
@@ -69,10 +69,12 @@ instance (Bin b, Distribution a, BinValue b ~ X a) => Distribution (Histogram b 
     fill (Histogram b v) w xs = Histogram b $ modify' (\d -> fill d w xs) (idx b xs) v
 
 
-distBuilder :: Distribution a => a -> Builder (W a, X a) a
-distBuilder = builder (\d (w, x) -> fill d w x)
+distConsumer :: (Distribution a, MonadThrow m) => a -> Consumer (W a, X a) m a
+distConsumer = CL.fold (\d (w, x) -> fill d w x)
 
 
+-- TODO
+-- somehow this needs to be linked to Distribution
 integral :: Monoid a => Histogram b a -> a
 integral = fold
 

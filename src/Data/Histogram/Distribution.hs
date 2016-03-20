@@ -9,7 +9,6 @@ module Data.Histogram.Distribution (
 
 import GHC.Generics
 import Data.Serialize
-import Data.Monoid
 import Data.TypeList
 
 
@@ -84,11 +83,9 @@ instance (Distribution a, Distribution b, W a ~ W b) => Distribution (a :. b) wh
 
 
 
+{-
 class Distribution s => ScaleX s where
     scaleX :: s -> X s -> s
-
-
-{-
 instance Num a => ScaleX (DistWX a) where
     -- possibly quite inefficient...
     DistWX (Sum swx) (Sum swx2) `scaleX` x =
