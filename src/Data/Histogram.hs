@@ -66,11 +66,13 @@ instance ScaleW a => ScaleW (Histogram b a) where
 
 instance (Bin b, Distribution a, BinValue b ~ X a) => Distribution (Histogram b a) where
     type X (Histogram b a) = X a
-    fill (Histogram b v) w xs = Histogram b $ modify' (\d -> fill d w xs) (idx b xs) v
+    (Histogram b v) `fill` (w, xs) = Histogram b $ modify' (flip fill (w, xs)) (idx b xs) v
 
 
+-- TODO
+-- this feels heavy...?
 distConsumer :: (Distribution a, MonadThrow m) => a -> Consumer (W a, X a) m a
-distConsumer = CL.fold (\d (w, x) -> fill d w x)
+distConsumer = CL.fold fill
 
 
 -- TODO

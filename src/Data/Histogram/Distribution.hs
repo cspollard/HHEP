@@ -66,20 +66,20 @@ instance (ScaleW a, ScaleW b, W a ~ W b) => ScaleW (a :. b) where
 
 class ScaleW d => Distribution d where
     type X d :: *
-    fill :: d -> W d -> X d -> d
+    fill :: d -> (W d, X d) -> d
 
 
 instance Num a => Distribution (Dist0 a) where
     type X (Dist0 a) = Z
-    fill (Dist0 sw sw2 n) w _ = Dist0 (sw+w) (sw2+w*w) (n+1)
+    fill (Dist0 sw sw2 n) (w, _) = Dist0 (sw+w) (sw2+w*w) (n+1)
 
 instance Num a => Distribution (DistWX a) where
     type X (DistWX a) = a
-    fill (DistWX swx swx2) w x = DistWX (swx+w*x) (swx2+w*x*x)
+    fill (DistWX swx swx2) (w, x) = DistWX (swx+w*x) (swx2+w*x*x)
 
 instance (Distribution a, Distribution b, W a ~ W b) => Distribution (a :. b) where
     type X (a :. b) = X a :. X b
-    fill (dxs :. dx) w (xs :. x) = fill dxs w xs :. fill dx w x
+    fill (dxs :. dx) (w, xs :. x) = fill dxs (w, xs) :. fill dx (w, x)
 
 
 
