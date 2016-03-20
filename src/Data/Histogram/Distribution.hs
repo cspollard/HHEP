@@ -4,6 +4,7 @@ module Data.Histogram.Distribution (
                                      Dist0(..), DistWX(..)
                                    , Dist0D, Dist1D
                                    , ScaleW(..), Distribution(..)
+                                   , fillFirst, fillAll
                                    , module Data.TypeList
                                    ) where
 
@@ -82,6 +83,14 @@ instance (Distribution a, Distribution b, W a ~ W b) => Distribution (a :. b) wh
     fill (dxs :. dx) (w, xs :. x) = fill dxs (w, xs) :. fill dx (w, x)
 
 
+fillFirst :: (Distribution d, Foldable f) => d -> f (W d, X d) -> d
+fillFirst d fwx = case listToMaybe . toList $ fwx of
+                    Nothing -> b
+                    Just wx -> d `fill` wx
+
+
+fillAll :: (Distribution d, Foldable f) => d -> f (W d, X d) -> d
+fillAll = fold fill
 
 {-
 class Distribution s => ScaleX s where
