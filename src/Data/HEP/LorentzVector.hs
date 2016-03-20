@@ -5,9 +5,6 @@ module Data.HEP.LorentzVector where
 import Data.Serialize
 import GHC.Generics (Generic)
 
-import Data.Monoid
-import Control.Applicative ((<$>), (<*>))
-
 -- right now you must provide X, Y, Z, T or Pt, Eta, Phi, E definitions
 -- in addition to fromLV.
 -- I realize this is slow in some cases.

@@ -2,3 +2,5 @@ LV methods:
 dPhi, dEta, etc
 
 Check logfile for redundant imports, etc
+
+maybe move Conduit out of hhep.
