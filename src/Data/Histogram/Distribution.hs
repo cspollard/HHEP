@@ -11,6 +11,8 @@ module Data.Histogram.Distribution (
 import GHC.Generics
 import Data.Serialize
 import Data.TypeList
+import Data.Foldable (toList)
+import Data.Maybe (listToMaybe)
 
 
 -- stores enough info to get the 2nd moment of a distribution
@@ -85,12 +87,12 @@ instance (Distribution a, Distribution b, W a ~ W b) => Distribution (a :. b) wh
 
 fillFirst :: (Distribution d, Foldable f) => d -> f (W d, X d) -> d
 fillFirst d fwx = case listToMaybe . toList $ fwx of
-                    Nothing -> b
+                    Nothing -> d
                     Just wx -> d `fill` wx
 
 
 fillAll :: (Distribution d, Foldable f) => d -> f (W d, X d) -> d
-fillAll = fold fill
+fillAll = foldl fill
 
 {-
 class Distribution s => ScaleX s where
