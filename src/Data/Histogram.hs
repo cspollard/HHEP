@@ -49,7 +49,7 @@ instance Foldable (Histogram b) where
 instance (Serialize a, Serialize b) => Serialize (Histogram b a) where
 
 histogram :: Bin b => b -> a -> Histogram b a
-histogram bins initial = Histogram bins (V.replicate (nbins bins + 2) initial)
+histogram bins initial = Histogram bins (V.replicate (nbins bins) initial)
 
 
 -- a version of modify that forces evaluation of the vector element at
@@ -90,8 +90,9 @@ integral = fold
 underflow :: Histogram b a -> a
 underflow (Histogram _ v) = v ! 0
 
+-- this won't work for 2+D histograms...
 overflow :: Bin b => Histogram b a -> a
-overflow (Histogram b v) = v ! (nbins b + 1)
+overflow (Histogram b v) = v ! (nbins b - 1)
 
 
 hadd :: (Eq b, Semigroup a) => Histogram b a -> Histogram b a -> Maybe (Histogram b a)
@@ -104,7 +105,7 @@ hadd (Histogram b v) (Histogram b' v')
 toTuples :: IntervalBin b => Histogram b a -> [((BinValue b, BinValue b), a)]
 toTuples (Histogram bins v) = zip (binEdges bins) $ map (v !) [1..n]
     where
-        n = nbins bins
+        n = nbins bins - 2
 
 
 -- convenience types
