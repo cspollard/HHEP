@@ -2,7 +2,7 @@
 
 
 module Data.Histogram( Histogram(..)
-                      , histogram
+                      , histogram, distConsumer
                       , binmap
                       , integral, underflow, overflow
                       , hadd, toTuples
@@ -27,7 +27,7 @@ import Data.Conduit
 import qualified Data.Conduit.List as CL
 import Control.Monad.Catch (MonadThrow(..))
 
-import Data.Monoid ((<>))
+import Data.Semigroup
 
 -- very simple histogram implementation
 data Histogram b a = Histogram b !(Vector a) deriving (Generic, Show)
@@ -70,6 +70,13 @@ instance (Bin b, Distribution a, BinValue b ~ X a) => Distribution (Histogram b 
 
 
 -- TODO
+-- a bit dangerous... but convenient.
+instance (Eq b, Semigroup a) => Semigroup (Histogram b a) where
+    -- dangerous because it throws an error!!
+    Histogram b v <> Histogram b' v' | b /= b'   = error "attempt to add histograms with different binning."
+                                     | otherwise = Histogram b $ V.zipWith (<>) v v'
+
+-- TODO
 -- this feels heavy...?
 distConsumer :: (Distribution a, MonadThrow m) => a -> Consumer (W a, X a) m a
 distConsumer = CL.fold fill
@@ -87,7 +94,7 @@ overflow :: Bin b => Histogram b a -> a
 overflow (Histogram b v) = v ! (nbins b + 1)
 
 
-hadd :: (Eq b, Monoid a) => Histogram b a -> Histogram b a -> Maybe (Histogram b a)
+hadd :: (Eq b, Semigroup a) => Histogram b a -> Histogram b a -> Maybe (Histogram b a)
 hadd (Histogram b v) (Histogram b' v')
         | b == b' = Just $ Histogram b (V.zipWith (<>) v v')
         | otherwise = Nothing
