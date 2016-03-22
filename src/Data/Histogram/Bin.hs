@@ -9,6 +9,7 @@ import Data.TypeList
 class Bin b where
     type BinValue b
     idx :: b -> BinValue b -> Int
+    -- NB: this must include under/overflow!
     nbins :: b -> Int
 
 class Bin b => IntervalBin b where
@@ -33,16 +34,16 @@ instance Functor ConstBin where
 instance Bin (Bin0D a) where
     type BinValue (Bin0D a) = Z
     idx _ = const 0
-    nbins = const 0
+    nbins = const 1
 
 instance RealFrac a => Bin (ConstBin a) where
     type BinValue (ConstBin a) = a
 
     ConstBin n (mn, mx) `idx` x | x < mn = 0
-                             | x > mx = n+1
-                             | otherwise = floor (fromIntegral n * (x - mn) / (mx - mn)) + 1
+                                | x > mx = n+1
+                                | otherwise = floor (fromIntegral n * (x - mn) / (mx - mn)) + 1
 
-    nbins (ConstBin n _) = n
+    nbins (ConstBin n _) = n+2
 
 
 instance IntervalBin (Bin0D a) where
@@ -57,17 +58,17 @@ instance RealFrac a => IntervalBin (ConstBin a) where
 instance (Bin a, Bin b) => Bin (a :. b) where
     type BinValue (a :. b) = (BinValue a :. BinValue b)
 
-    (bx :. by) `idx` (x :. y) = (bx `idx` x) + (nbins bx + 1) * (by `idx` y)
+    (bx :. by) `idx` (x :. y) = nbins by * (bx `idx` x) + (by `idx` y)
 
-    nbins (bx :. by) = (nbins bx + 1) * (nbins by + 1)
+    nbins (bx :. by) = nbins bx * nbins by
 
 
 instance (IntervalBin a, IntervalBin b) => IntervalBin (a :. b) where
     binEdges (bx :. by) = [(x0 :. y0, x :. y) | (x0, x) <- binEdges bx, (y0, y) <- binEdges by]
 
 
-bin1D :: Int -> (a, a) -> Bin1D a
-bin1D n = (Bin0D :.) . ConstBin n
+constBin1D :: Int -> (a, a) -> Bin1D a
+constBin1D n = (Bin0D :.) . ConstBin n
 
 -- convenience types
 type Bin1D a = Bin0D a :. ConstBin a

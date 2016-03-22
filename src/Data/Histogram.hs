@@ -55,9 +55,8 @@ histogram bins initial = Histogram bins (V.replicate (nbins bins + 2) initial)
 -- a version of modify that forces evaluation of the vector element at
 -- ix
 modify' :: (b -> b) -> Int -> Vector b -> Vector b
-modify' f ix = modify $ \v -> do
-                            y <- MV.read v ix
-                            write v ix $! f y
+modify' f ix = modify $ \v -> do y <- MV.read v ix
+                                 write v ix $! f y
 
 
 instance ScaleW a => ScaleW (Histogram b a) where
@@ -71,6 +70,7 @@ instance (Bin b, Distribution a, BinValue b ~ X a) => Distribution (Histogram b 
 
 -- TODO
 -- a bit dangerous... but convenient.
+-- is there a way to make this work at the type level?
 instance (Eq b, Semigroup a) => Semigroup (Histogram b a) where
     -- dangerous because it throws an error!!
     Histogram b v <> Histogram b' v' | b /= b'   = error "attempt to add histograms with different binning."
