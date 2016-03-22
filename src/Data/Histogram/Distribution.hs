@@ -13,6 +13,7 @@ import Data.Serialize
 import Data.TypeList
 import Data.Foldable (toList)
 import Data.Maybe (listToMaybe)
+import Data.Semigroup
 
 
 -- stores enough info to get the 2nd moment of a distribution
@@ -37,15 +38,21 @@ instance Serialize a => Serialize (DistWX a) where
 type Dist0D a = Dist0 a
 type Dist1D a = Dist0D a :. DistWX a
 
+instance Num a => Semigroup (Dist0 a) where
+    Dist0 sw sw2 ne <> Dist0 sw' sw2' ne' =
+            Dist0 (sw + sw') (sw2 + sw2') (ne + ne')
+
 instance Num a => Monoid (Dist0 a) where
     mempty = Dist0 0 0 0
-    Dist0 sw sw2 ne `mappend` Dist0 sw' sw2' ne' =
-            Dist0 (sw + sw') (sw2 + sw2') (ne + ne')
+    mappend = (<>)
+
+instance Num a => Semigroup (DistWX a) where
+    DistWX swx swx2 <> DistWX swx' swx2' =
+            DistWX (swx + swx') (swx2 + swx2')
 
 instance Num a => Monoid (DistWX a) where
     mempty = DistWX 0 0
-    DistWX swx swx2 `mappend` DistWX swx' swx2' =
-            DistWX (swx + swx') (swx2 + swx2')
+    mappend = (<>)
 
 class ScaleW s where
     type W s :: *
