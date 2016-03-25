@@ -4,6 +4,8 @@ module Data.HEP.LorentzVector where
 
 import Data.Serialize
 import GHC.Generics (Generic)
+import Data.Foldable (maximumBy)
+import Data.Ord (comparing)
 
 -- right now you must provide X, Y, Z, T or Pt, Eta, Phi, E definitions
 -- in addition to fromLV.
@@ -164,3 +166,7 @@ toXYZT = lv
 
 toPtEtaPhiE :: HasLorentzVector a => a -> PtEtaPhiE
 toPtEtaPhiE = lv
+
+leading :: (Foldable f, HasLorentzVector a) => f a -> Maybe a
+leading fa | null fa   = Nothing
+           | otherwise = Just (maximumBy (comparing $ lvPt . toPtEtaPhiE) fa)
