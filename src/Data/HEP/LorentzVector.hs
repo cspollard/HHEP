@@ -103,6 +103,24 @@ lvM2 :: (LorentzVector a) => a -> Double
 lvM2 = (-) <$> lvE2 <*> lvP2
 
 
+lvDPhi :: (HasLorentzVector a, HasLorentzVector b) => a -> b -> Double
+lvDPhi v v' = let dp = asin $ sin (lvPhi lvv - lvPhi lvv') in dp*dp
+    where
+        lvv = toPtEtaPhiE v
+        lvv' = toPtEtaPhiE v'
+
+lvDEta :: (HasLorentzVector a, HasLorentzVector b) => a -> b -> Double
+lvDEta v v' = let de = lvEta lvv - lvEta lvv' in de*de
+    where
+        lvv = toPtEtaPhiE v
+        lvv' = toPtEtaPhiE v'
+
+lvDR :: (HasLorentzVector a, HasLorentzVector b) => a -> b -> Double
+lvDR v v' = sqrt $ dEta2 + dPhi2
+    where
+        dPhi2 = let dp = lvDPhi v v' in dp*dp
+        dEta2 = let de = lvDEta v v' in de*de
+
 
 data PtEtaPhiE = PtEtaPhiE Double Double Double Double
     deriving (Show, Read, Generic)
