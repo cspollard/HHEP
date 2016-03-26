@@ -2,7 +2,6 @@
 
 module Data.TypeList where
 
-import Data.Monoid hiding ((<>))
 import GHC.Generics
 import Data.Serialize
 import Data.Semigroup

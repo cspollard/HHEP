@@ -2,7 +2,7 @@
 
 
 module Data.Histogram( Histogram(..)
-                      , histogram, distConsumer
+                      , histogram
                       , binmap
                       , integral, underflow, overflow
                       , hadd, toTuples
@@ -22,10 +22,6 @@ import Data.Serialize (Serialize(..))
 import GHC.Generics (Generic)
 
 import Data.Serialize.Vector ()
-
-import Data.Conduit
-import qualified Data.Conduit.List as CL
-import Control.Monad.Catch (MonadThrow(..))
 
 import Data.Semigroup
 
@@ -75,11 +71,6 @@ instance (Eq b, Semigroup a) => Semigroup (Histogram b a) where
     -- dangerous because it throws an error!!
     Histogram b v <> Histogram b' v' | b /= b'   = error "attempt to add histograms with different binning."
                                      | otherwise = Histogram b $ V.zipWith (<>) v v'
-
--- TODO
--- this feels heavy...?
-distConsumer :: (Distribution a, MonadThrow m) => a -> Consumer (W a, X a) m a
-distConsumer = CL.fold fill
 
 
 -- TODO
