@@ -17,6 +17,11 @@ instance Monoid Z where
     mappend = const
 
 
+infixl 3 :.
+data head :. tail = !head :. !tail
+        deriving (Generic, Show, Eq)
+
+
 instance (Semigroup a, Semigroup b) => Semigroup (a :. b) where
     (x :. y) <> (x' :. y') =
             (x <> x') :. (y <> y')
@@ -26,9 +31,5 @@ instance (Monoid a, Monoid b) => Monoid (a :. b) where
     (x :. y) `mappend` (x' :. y') =
             (x `mappend` x') :. (y `mappend` y')
 
-
-infixl 3 :.
-data head :. tail = !head :. !tail
-        deriving (Generic, Show, Eq)
 
 instance (Serialize a, Serialize b) => Serialize (a :. b) where

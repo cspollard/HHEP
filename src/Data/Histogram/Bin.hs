@@ -36,6 +36,7 @@ instance Bin (Bin0D a) where
     idx _ = const 0
     nbins = const 1
 
+
 instance RealFrac a => Bin (ConstBin a) where
     type BinValue (ConstBin a) = a
 
