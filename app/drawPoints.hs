@@ -9,10 +9,8 @@ import Data.Colour.Palette.ColorSet
 import Graphics.Histo
 import Data.Histogram
 
-import Debug.Trace
-
 hTest :: Histo1D
-hTest = histogram (constBin1D 15 (-10, 20)) mempty `fill` (-1.0, Z :. 1.5) `fill` (2.5, Z :. 10) `fill` (5.0, Z :. 15)
+hTest = histogram (constBin1D 15 (-10, 20)) mempty `fill` (-1.0, Z :. 1.5) `fill` (2.5, Z :. 10) `fill` (5.0, Z :. 10)
 
 hTest' :: Histo1D
 hTest' = histogram (constBin1D 15 (-10, 20)) mempty `fill` (1.0, Z :. 1.5) `fill` (-1.0, Z :. -5.0) `fill` (0.5, Z :. 18)

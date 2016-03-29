@@ -4,7 +4,7 @@ module Graphics.Histo where
 
 import Diagrams.Prelude hiding (diff)
 import Diagrams.TwoD.Text
-import Numeric (showGFloat)
+import Numeric (showGFloat, floatToDigits)
 
 import Data.Maybe (fromMaybe)
 
@@ -64,10 +64,15 @@ addAxes t d = let (xlo, xhi) = fromMaybe (0, 1) $ extentX d
 
 
 -- TODO
--- could use powers of 2, 10, 25, and 50
+-- why (e-2)?!?!?
 -- determine the approrpriate tick spacing for a given scale
 tickSpacing :: Double -> Double
-tickSpacing s = 10.0 ^^ ((floor :: Double -> Int) . logBase 10 . (/1.3)$ s)
+tickSpacing s = let (h:_, e) = floatToDigits 10 s
+                in if h < 2
+                   then 10.0 ^^ (e-2)
+                   else if h < 4
+                        then 5 * (10.0 ^^ (e-2))
+                        else 10.0 ^^ (e-1)
 
 
 axisTicks :: Double -> Double -> [Double]
@@ -78,18 +83,7 @@ axisTicks lo hi = let d = hi-lo
 
 
 fromToBy :: Double -> Double -> Double -> [Double]
-fromToBy strt stp dist = takeWhile (<= stp) $ iterate (+dist) strt
-
-
--- generate a set of points with a starting location and a diff vector
-iterP2 :: (Num (N a), Transformable a) => a -> Vn a -> [a]
-iterP2 xi dx = iterate (translate dx) xi
-
-fromToByX :: (Num n, Ord n) => n -> n -> n -> n -> [P2 n]
-fromToByX y xi xf dx = takeWhile ((<= xf) . fst . unp2) $ iterP2 (mkP2 xi y) (mkR2 dx 0)
-
-fromToByY :: (Num n, Ord n) => n -> n -> n -> n -> [P2 n]
-fromToByY x yi yf dy = takeWhile ((<= yf) . snd . unp2) $ iterP2 (mkP2 x yi) (mkR2 0 dy)
+fromToBy strt stp dist = take (ceiling $ (stp-strt)/dist) $ iterate (+dist) strt
 
 
 -- labTickX, minTickX, labTickY, minTickY :: P2 (N b) -> Diagram b
