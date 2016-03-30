@@ -11,6 +11,17 @@ import Data.Maybe (fromMaybe)
 import Data.TypeList
 import Data.Histogram
 
+import Diagrams.Backend.PGF
+
+-- TODO
+-- move
+-- type
+renderHistos outfile w hs = renderPGF outfile (mkWidth w) $
+                                let (t, d) = forceDimensions (1, 1) . mconcat
+                                                $ map (drawGraph . histToGraph) hs
+                                in d # addAxes t # centerXY # pad 1.2 # lwN 0.005
+
+
 type PtErr2D = ((Double, (Double, Double)), (Double, (Double, Double)))
 
 type Graph2D = [PtErr2D]
