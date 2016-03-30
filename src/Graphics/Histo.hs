@@ -16,10 +16,13 @@ import Diagrams.Backend.PGF
 -- TODO
 -- move
 -- type
-renderHistos outfile w hs = renderPGF outfile (mkWidth w) $
+renderHistos outfile w hs = renderPGF' outfile opts $
                                 let (t, d) = forceDimensions (1, 1) . mconcat
                                                 $ map (drawGraph . histToGraph) hs
                                 in d # addAxes t # centerXY # pad 1.2 # lwN 0.005
+
+        where opts = def & sizeSpec .~ mkWidth w
+                         & standalone .~ True
 
 
 type PtErr2D = ((Double, (Double, Double)), (Double, (Double, Double)))
@@ -36,8 +39,6 @@ histToGraph = map toPoint . toTuples
 
 forceDimensions :: (V b ~ V2, N b ~ Double)
                 => (Double, Double) -> Diagram b -> (Transformation V2 Double, Diagram b)
--- forceDimensions :: (Additive v, R2 v, R2 (V t), Transformable t, Enveloped t, V t ~ V2)
-                -- => (N t, N t) -> t -> (Transformation v (N t), t)
 forceDimensions (w', h') d = let w = width d
                                  h = height d
                                  sx = w'/w
