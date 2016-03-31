@@ -43,7 +43,9 @@ forceDimensions (w', h') d = let w = width d
                                  h = height d
                                  sx = w'/w
                                  sy = h'/h
-                             in (inv (scalingX sx <> scalingY sy), d # scaleX sx # scaleY sy)
+                             in if w == 0 || h == 0
+                                then (mempty, d `atop` strut (mkR2 1 1))
+                                else (inv (scalingX sx <> scalingY sy), d # scaleX sx # scaleY sy)
 
 
 drawGraph :: (InSpace V2 Double (Diagram b), TrailLike (Diagram b))
