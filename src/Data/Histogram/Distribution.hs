@@ -101,6 +101,7 @@ fillFirst d fwx = case listToMaybe . toList $ fwx of
 fillAll :: (Distribution d, Foldable f) => d -> f (W d, X d) -> d
 fillAll = foldl fill
 
+
 {-
 class Distribution s => ScaleX s where
     scaleX :: s -> X s -> s

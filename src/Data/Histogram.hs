@@ -100,4 +100,4 @@ toTuples (Histogram bins v) = zip (binEdges bins) $ map (v !) [1..n]
 
 
 -- convenience types
-type Histo1D = Histogram (Bin1D Double) (Dist1D Double)
+type Histo1D = Histogram (ConstBin1D Double) (Dist1D Double)
