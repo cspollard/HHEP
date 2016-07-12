@@ -86,6 +86,8 @@ overflow :: Bin b => Histogram b a -> a
 overflow (Histogram b v) = v ! (nbins b - 1)
 
 
+-- TODO
+-- this should be type safe.
 hadd :: (Eq b, Semigroup a) => Histogram b a -> Histogram b a -> Maybe (Histogram b a)
 hadd (Histogram b v) (Histogram b' v')
         | b == b' = Just $ Histogram b (V.zipWith (<>) v v')
