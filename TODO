@@ -4,3 +4,5 @@ dPhi, dEta, etc
 Check logfile for redundant imports, etc
 
 maybe move Conduit out of hhep.
+
+what information do we actually need to save in a histogram?
