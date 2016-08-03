@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 {-
  - taken from
  - http://pdg.lbl.gov/2002/montecarlorpp.pdf
@@ -11,7 +13,8 @@ import Data.Set
 
 -- TODO
 -- Integer?
-type PID = Int
+newtype PID = PID { toInt :: Int
+                  } deriving (Eq, Ord, Enum, Show, Read, Num, Real, Integral)
 
 type PIDSet = Set PID
 
@@ -25,13 +28,13 @@ abspid :: HasPID hp => hp -> PID
 abspid = abs . pid
 
 
-electron, eNeutrino, muon, mNeutrino, tau, tNeutrino :: Int
+electron, eNeutrino, muon, mNeutrino, tau, tNeutrino :: PID
 
-down, up, strange, charm, bottom, top :: Int
+down, up, strange, charm, bottom, top :: PID
 
-gluon, photon, gamma, z, wplus, wminus :: Int
+gluon, photon, gamma, z, wplus, wminus :: PID
 
-h, hplus, hminus :: Int
+h, hplus, hminus :: PID
 
 
 electron = 11
@@ -67,6 +70,7 @@ h = 25
 hplus = 37
 hminus = -hplus
 
+chargedLeptons, neutrinos, leptons :: PIDSet
 chargedLeptons = fromList [electron, -electron,
                            muon, -muon,
                            tau, -tau]
@@ -77,8 +81,7 @@ neutrinos = fromList [eNeutrino, -eNeutrino,
 
 leptons = chargedLeptons `union` neutrinos
 
-
-
+downTypeQuarks, upTypeQuarks, quarks, partons :: PIDSet
 downTypeQuarks = fromList [down, -down,
                            strange, -strange,
                            bottom, -bottom]
@@ -92,11 +95,15 @@ quarks = downTypeQuarks `union` upTypeQuarks
 
 partons = insert gluon quarks
 
+weakBosons, ewBosons :: PIDSet
 weakBosons = fromList [z, wplus, wminus]
 
 ewBosons = insert photon weakBosons
 
 
+type PIDClass = PID -> Bool
+
+diquark, hadron, meson, baryon :: PIDClass
 diquark p = 1000 < p && p < 7000
 hadron p = nq2 p > 0 && nq3 p > 0
 meson p = hadron p && nq1 p == 0
@@ -104,9 +111,11 @@ baryon p = hadron p && nq1 p > 0
 
 -- TODO
 -- this could be faster as Int?
-digit :: (Integral a) => a -> a -> a
-digit x n = div (abs x) (10^n) `mod` 10
+digit :: Integral a => a -> a -> a
+digit x i = div (abs x) (10^i) `mod` 10
 
+
+nJ, nq3, nq2, nq1, nL, nr, n :: Integral a => a -> a
 nJ = flip digit 0
 nq3 = flip digit 1
 nq2 = flip digit 2
@@ -115,10 +124,13 @@ nL = flip digit 4
 nr = flip digit 5
 n = flip digit 6
 
+hasQuark :: PID -> PID -> Bool
 hasQuark p q = (hadron p || diquark p) && (or . fmap ( (==) q . ($ p) ) $ [nq1, nq2, nq3])
 
+hasBottomQuark, hasCharmQuark :: PIDClass
 hasBottomQuark = flip hasQuark bottom
 hasCharmQuark = flip hasQuark charm
+
 
 ofType :: HasPID hp => hp -> PIDSet -> Bool
 ofType p = member (pid p)
