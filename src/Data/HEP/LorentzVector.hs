@@ -172,8 +172,8 @@ instance Monoid PtEtaPhiE where
                 (lvT a + lvT b)
 
 instance Monoid XYZT where
-    mempty = fromLV $ XYZT 0 0 0 0
-    a `mappend` b = fromLV $ XYZT
+    mempty = XYZT 0 0 0 0
+    a `mappend` b = XYZT
                 (lvX a + lvX b)
                 (lvY a + lvY b)
                 (lvZ a + lvZ b)
