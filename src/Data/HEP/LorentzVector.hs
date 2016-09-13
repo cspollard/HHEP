@@ -1,119 +1,161 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Data.HEP.LorentzVector where
+
+import Control.Lens
 
 import Data.Serialize
 import GHC.Generics (Generic)
 import Data.Foldable (maximumBy)
 import Data.Ord (comparing)
 
--- right now you must provide X, Y, Z, T or Pt, Eta, Phi, E definitions
--- in addition to fromLV.
--- I realize this is slow in some cases.
+
 -- TODO
+-- this formulation could be quite slow in some cases.
 
-class LorentzVector a where
-    lvX :: a -> Double
-    lvX = (*) <$> lvPt <*> (cos . lvPhi)
-    lvY :: a -> Double
-    lvY = (*) <$> lvPt <*> (sin . lvPhi)
-    lvZ :: a -> Double
-    lvZ = (*) <$> lvPt <*> (sinh . lvEta)
-    lvT :: a -> Double
-    lvT = lvE
+data PtEtaPhiE =
+    PtEtaPhiE
+        { __pt :: Double
+        , __eta :: Double
+        , __phi :: Double
+        , __e :: Double
+        } deriving (Show, Generic)
 
-    lvPt :: a -> Double
-    lvPt = sqrt . lvPt2
-    lvEta :: a -> Double
-    lvEta = negate . log . tan . (/2) <$> lvTheta
-    lvPhi :: a -> Double
-    lvPhi = atan2 <$> lvY <*> lvX
-    lvE :: a -> Double
-    lvE = lvT
-
-    fromLV :: LorentzVector b => b -> a
+makeLenses ''PtEtaPhiE
+instance Serialize PtEtaPhiE where
 
 
-class HasLorentzVector hlv where
-    lv :: LorentzVector a => hlv -> a
+data XYZT =
+    XYZT
+        { __x :: Double
+        , __y :: Double
+        , __z :: Double
+        , __t :: Double
+        }
+    deriving (Show, Generic)
+
+makeLenses ''XYZT
+instance Serialize XYZT where
+
+
+-- PtEtaPhiE and XYZT are of course isomorphic.
+isoXyztPepe :: Iso' XYZT PtEtaPhiE
+isoXyztPepe = iso f g
+    where f (XYZT x y z t) =
+            let pt = sqrt(x**2 + y**2)
+            in PtEtaPhiE
+                pt
+                (negate . log . tan . (/2) $ atan2 pt z)
+                (atan2 x y)
+                t
+
+          g (PtEtaPhiE pt eta phi e) =
+            XYZT
+                (pt*cos phi)
+                (pt*sin phi)
+                (pt * sinh eta)
+                e
+
+
+class HasLorentzVector a where
+    toPtEtaPhiE :: Lens' a PtEtaPhiE
+    toPtEtaPhiE = toXYZT . isoXyztPepe
+
+    toXYZT :: Lens' a XYZT
+    toXYZT = toPtEtaPhiE . from isoXyztPepe
+
+
+instance HasLorentzVector XYZT where
+    toXYZT = iso id id
+
+instance HasLorentzVector PtEtaPhiE where
+    toPtEtaPhiE = iso id id
+
+
+lvX :: HasLorentzVector a => Lens' a Double
+lvX = toXYZT . _x
+lvY :: HasLorentzVector a => Lens' a Double
+lvY = toXYZT . _y
+lvZ :: HasLorentzVector a => Lens' a Double
+lvZ = toXYZT . _z
+lvT :: HasLorentzVector a => Lens' a Double
+lvT = toXYZT . _t
+
+lvPt :: HasLorentzVector a => Lens' a Double
+lvPt = toPtEtaPhiE . _pt
+lvEta :: HasLorentzVector a => Lens' a Double
+lvEta = toPtEtaPhiE . _eta
+lvPhi :: HasLorentzVector a => Lens' a Double
+lvPhi = toPtEtaPhiE . _phi
+lvE :: HasLorentzVector a => Lens' a Double
+lvE = toPtEtaPhiE . _e
+
+lvPx :: HasLorentzVector a => Lens' a Double
+lvPx = lvX
+lvPy :: HasLorentzVector a => Lens' a Double
+lvPy = lvY
+lvPz :: HasLorentzVector a => Lens' a Double
+lvPz = lvZ
+
+
+lvTheta :: HasLorentzVector a => Getter a Double
+lvTheta = to $ atan2 <$> view lvPt <*> view lvPz
+
+lvP2 :: HasLorentzVector a => Getter a Double
+lvP2 = to $ (+) <$> view lvPt2 <*> view lvZ2
+
+lvPt2 :: HasLorentzVector a => Getter a Double
+lvPt2 = to $ (+) <$> view lvX2 <*> view lvY2
+
+squareL :: Num b => Getter a b -> Getter a b
+squareL l = to $ \x -> let y = view l x in y*y
+
+lvX2 :: HasLorentzVector a => Getter a Double
+lvX2 = squareL lvX
+
+lvY2 :: HasLorentzVector a => Getter a Double
+lvY2 = squareL lvY
+
+lvZ2 :: HasLorentzVector a => Getter a Double
+lvZ2 = squareL lvZ
+
+lvT2 :: HasLorentzVector a => Getter a Double
+lvT2 = squareL lvT
+
+lvM :: HasLorentzVector a => Getter a Double
+lvM = to $ sqrt . view lvM2
+
+lvM2 :: HasLorentzVector a => Getter a Double
+lvM2 = to $ (-) <$> view lvE2 <*> view lvP2
+
+lvE2 :: HasLorentzVector a => Getter a Double
+lvE2 = lvT2
 
 
 -- flip only the 3 vector of a LorentzVector
-lvNegate :: LorentzVector v => v -> v
-lvNegate = fmap fromLV $ XYZT <$>
-                    (negate . lvX) <*>
-                    (negate . lvY) <*>
-                    (negate . lvZ) <*>
-                    lvT
-
-lvDot :: (LorentzVector v) => v -> v -> Double
-lvDot a b = lvX a * lvX b +
-            lvY a * lvY b +
-            lvZ a * lvZ b -
-            lvT a * lvT b
+lvNegate :: HasLorentzVector v => v -> v
+lvNegate = over toXYZT $
+    \(XYZT x y z t) -> XYZT (negate x) (negate y) (negate z) t
 
 
--- TODO
--- some of these should be moved inside LorentzVector for speedup.
-
--- TODO
--- these should be perhaps belong to HasLorentzVector and not
--- LorentzVector.
-lvPx :: (LorentzVector a) => a -> Double
-lvPx = lvX
-
-lvPy :: (LorentzVector a) => a -> Double
-lvPy = lvY
-
-lvPz :: (LorentzVector a) => a -> Double
-lvPz = lvZ
-
-lvE2 :: (LorentzVector a) => a -> Double
-lvE2 = lvT2
-
-lvTheta :: (LorentzVector a) => a -> Double
-lvTheta = atan2 <$> lvPt <*> lvPz
-
-squareF :: Num b => (a -> b) -> a -> b
-squareF f = (*) <$> f <*> f
-
-lvX2 :: (LorentzVector a) => a -> Double
-lvX2 = squareF lvX
-
-lvY2 :: (LorentzVector a) => a -> Double
-lvY2 = squareF lvY
-
-lvZ2 :: (LorentzVector a) => a -> Double
-lvZ2 = squareF lvZ
-
-lvT2 :: (LorentzVector a) => a -> Double
-lvT2 = squareF lvT
+lvDot :: (HasLorentzVector v, HasLorentzVector v') => v -> v' -> Double
+lvDot a b = view lvX a * view lvX b +
+            view lvY a * view lvY b +
+            view lvZ a * view lvZ b -
+            view lvT a * view lvT b
 
 
-lvP2 :: (LorentzVector a) => a -> Double
-lvP2 = (+) <$> lvPt2 <*> lvZ2
+lvDPhi :: (HasLorentzVector v, HasLorentzVector v') => v -> v' -> Double
+lvDPhi v v' = asin $ sin (view lvPhi v - view lvPhi v')
 
-lvPt2 :: (LorentzVector a) => a -> Double
-lvPt2 = (+) <$> lvX2 <*> lvY2
-
-lvM :: (LorentzVector a) => a -> Double
-lvM = sqrt . lvM2
-
-lvM2 :: (LorentzVector a) => a -> Double
-lvM2 = (-) <$> lvE2 <*> lvP2
-
-
-lvDPhi :: (HasLorentzVector a, HasLorentzVector b) => a -> b -> Double
-lvDPhi v v' = let dp = asin $ sin (lvPhi lvv - lvPhi lvv') in dp*dp
-    where
-        lvv = toPtEtaPhiE v
-        lvv' = toPtEtaPhiE v'
 
 lvDEta :: (HasLorentzVector a, HasLorentzVector b) => a -> b -> Double
-lvDEta v v' = let de = lvEta lvv - lvEta lvv' in de*de
-    where
-        lvv = toPtEtaPhiE v
-        lvv' = toPtEtaPhiE v'
+lvDEta v v' = view lvEta v - view lvEta v'
+
 
 lvDR :: (HasLorentzVector a, HasLorentzVector b) => a -> b -> Double
 lvDR v v' = sqrt $ dEta2 + dPhi2
@@ -122,69 +164,25 @@ lvDR v v' = sqrt $ dEta2 + dPhi2
         dEta2 = let de = lvDEta v v' in de*de
 
 
-data PtEtaPhiE = PtEtaPhiE Double Double Double Double
-    deriving (Show, Read, Generic)
 
-instance Serialize PtEtaPhiE
-
-instance LorentzVector PtEtaPhiE where
-    lvPt (PtEtaPhiE pt _ _ _) = pt
-    lvEta (PtEtaPhiE _ eta _ _) = eta
-    lvPhi (PtEtaPhiE _ _ phi _) = phi
-    lvE (PtEtaPhiE _ _ _ e) = e
-
-    fromLV = PtEtaPhiE <$> lvPt <*> lvEta <*> lvPhi <*> lvE
-
-instance HasLorentzVector PtEtaPhiE where
-    lv = fromLV
-
-type PtEtaPhiEs = [PtEtaPhiE]
-
-
-
-data XYZT = XYZT Double Double Double Double
-    deriving (Show, Generic, Read)
-
-instance Serialize XYZT
-
-type XYZTs = [XYZT]
-
-
-instance LorentzVector XYZT where
-    lvX (XYZT x _ _ _) = x
-    lvY (XYZT _ y _ _) = y
-    lvZ (XYZT _ _ z _) = z
-    lvT (XYZT _ _ _ t) = t
-
-    fromLV = XYZT <$> lvX <*> lvY <*> lvZ <*> lvT
-
-
-instance HasLorentzVector XYZT where
-    lv = fromLV
+withIso2 :: (a -> a -> a) -> Iso' b a -> b -> b -> b
+withIso2 f i x y = view (from i) $ f (view i x) (view i y)
 
 -- all LorentzVectors are monoids under addition
 instance Monoid PtEtaPhiE where
-    mempty = fromLV $ XYZT 0 0 0 0
-    a `mappend` b = fromLV $ XYZT
-                (lvX a + lvX b)
-                (lvY a + lvY b)
-                (lvZ a + lvZ b)
-                (lvT a + lvT b)
+    mempty = view isoXyztPepe mempty
+    mappend = withIso2 mappend (from isoXyztPepe)
 
 instance Monoid XYZT where
     mempty = XYZT 0 0 0 0
-    a `mappend` b = XYZT
-                (lvX a + lvX b)
-                (lvY a + lvY b)
-                (lvZ a + lvZ b)
-                (lvT a + lvT b)
+    (XYZT x y z t) `mappend` (XYZT x' y' z' t') =
+        XYZT
+            (x + x')
+            (y + y')
+            (z + z')
+            (t + t')
 
-toXYZT :: HasLorentzVector a => a -> XYZT
-toXYZT = lv
-
-toPtEtaPhiE :: HasLorentzVector a => a -> PtEtaPhiE
-toPtEtaPhiE = lv
 
 leading :: (Foldable f, HasLorentzVector a) => f a -> Maybe a
 leading fa | null fa   = Nothing
-           | otherwise = Just (maximumBy (comparing $ lvPt . toPtEtaPhiE) fa)
+           | otherwise = Just (maximumBy (comparing $ view lvPt) fa)
