@@ -164,6 +164,9 @@ lvDR v v' = sqrt $ dEta2 + dPhi2
         dEta2 = let de = lvDEta v v' in de*de
 
 
+lvAbsEta :: HasLorentzVector a => Getter a Double
+lvAbsEta = lvEta . to abs
+
 
 withIso2 :: (a -> a -> a) -> Iso' b a -> b -> b -> b
 withIso2 f i x y = view (from i) $ f (view i x) (view i y)
