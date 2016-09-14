@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {-
@@ -5,100 +6,135 @@
  - http://pdg.lbl.gov/2002/montecarlorpp.pdf
  -}
 
--- TODO
--- a lot of this needs to be hidden.
-module Data.HEP.PID where
+module Data.HEP.PID
+    ( PID, HasPID(..)
+    , hasPID, abspid
+    , anti
+    , electron, eNeutrino
+    , muon, mNeutrino
+    , tau, tNeutrino
+    , down, up
+    , strange, charm
+    , bottom, top
+    , gluon
+    , photon, gamma
+    , zBoson, wPlus, wMinus
+    , higgs, hPlus, hMinus
+    , chargedLeptons, neutrinos
+    , leptons
+    , downTypeQuarks, upTypeQuarks
+    , quarks, partons
+    , weakBosons, ewBosons
+    , hasQuark
+    , hasBottomQuark, hasCharmQuark
+    , ofType, ofClass
+    , isQuark, isChargedLepton, isNeutrino
+    , isLepton, isTau
+    , isHadron, isMeson, isDiquark, isBaryon
+    ) where
 
-import Data.Set
+import Control.Lens
+
+import Data.Set as S
 
 -- TODO
 -- Integer?
-newtype PID = PID { toInt :: Int
-                  } deriving (Eq, Ord, Enum, Show, Read, Num, Real, Integral)
+newtype PID = PID Int
+        deriving (Eq, Ord, Enum, Show, Num, Real, Integral)
+
+class HasPID hp where
+    pid :: Lens' hp PID
+
+hasPID :: HasPID hp => hp -> PID -> Bool
+hasPID part p = p == view pid part
+
+instance HasPID PID where
+    pid = id
+
+abspid :: HasPID hp => Getter hp PID
+abspid = pid . to abs
+
 
 type PIDSet = Set PID
 
--- TODO
--- tagged union PIDClass?
+anti :: PIDSet -> PIDSet
+anti = S.map negate
 
-class HasPID hp where
-    pid :: hp -> PID
-
-abspid :: HasPID hp => hp -> PID
-abspid = abs . pid
-
-
-electron, eNeutrino, muon, mNeutrino, tau, tNeutrino :: PID
-
-down, up, strange, charm, bottom, top :: PID
-
-gluon, photon, gamma, z, wplus, wminus :: PID
-
-h, hplus, hminus :: PID
+electron, eNeutrino, muon, mNeutrino, tau, tNeutrino :: PIDSet
+down, up, strange, charm, bottom, top :: PIDSet
+gluon, photon, gamma, zBoson, wPlus, wMinus :: PIDSet
+higgs, hPlus, hMinus :: PIDSet
 
 
-electron = 11
-eNeutrino = 12
+electron = [11]
+eNeutrino = [12]
 
-muon = 13
-mNeutrino = 14
+muon = [13]
+mNeutrino = [14]
 
-tau = 15
-tNeutrino = 16
+tau = [15]
+tNeutrino = [16]
 
-down = 1
-up = 2
-strange = 3
-charm = 4
-bottom = 5
-top = 6
+down = [1]
+up = [2]
+strange = [3]
+charm = [4]
+bottom = [5]
+top = [6]
 
-gluon = 21
-photon = 22
+gluon = [21]
+photon = [22]
 gamma = photon
-z = 23
-wplus = 24
-wminus = -wplus
+zBoson = [23]
+wPlus = [24]
+wMinus = [-24]
 
--- TODO
--- BSM higgses...
--- a0?
--- h0?
+higgs = [25]
 
-h = 25
-
-hplus = 37
-hminus = -hplus
+hPlus = [37]
+hMinus = [-37]
 
 chargedLeptons, neutrinos, leptons :: PIDSet
-chargedLeptons = fromList [electron, -electron,
-                           muon, -muon,
-                           tau, -tau]
+chargedLeptons =
+    unions
+        [ electron, anti electron
+        , muon, anti muon
+        , tau, anti tau
+        ]
 
-neutrinos = fromList [eNeutrino, -eNeutrino,
-                      mNeutrino, -mNeutrino,
-                      tNeutrino, -tNeutrino]
+neutrinos =
+    unions
+        [ eNeutrino, anti eNeutrino
+        , mNeutrino, anti mNeutrino
+        , tNeutrino, anti tNeutrino
+        ]
 
 leptons = chargedLeptons `union` neutrinos
 
 downTypeQuarks, upTypeQuarks, quarks, partons :: PIDSet
-downTypeQuarks = fromList [down, -down,
-                           strange, -strange,
-                           bottom, -bottom]
+downTypeQuarks =
+    unions
+        [ down, anti down
+        , strange, anti strange
+        , bottom, anti bottom
+        ]
 
-upTypeQuarks = fromList [up, -up,
-                         charm, -charm,
-                         top, -top]
+upTypeQuarks =
+    unions
+        [ up, anti up
+        , charm, anti charm
+        , top, anti charm
+        ]
 
 
 quarks = downTypeQuarks `union` upTypeQuarks
 
-partons = insert gluon quarks
+partons = gluon `union` quarks
 
 weakBosons, ewBosons :: PIDSet
-weakBosons = fromList [z, wplus, wminus]
+weakBosons = unions [zBoson, wPlus, wMinus]
 
-ewBosons = insert photon weakBosons
+ewBosons = photon `union` weakBosons
 
 
 type PIDClass = PID -> Bool
@@ -115,7 +151,7 @@ digit :: Integral a => a -> a -> a
 digit x i = div (abs x) (10^i) `mod` 10
 
 
-nJ, nq3, nq2, nq1, nL, nr, n :: Integral a => a -> a
+nJ, nq3, nq2, nq1, nL, nr, n :: PID -> PID
 nJ = flip digit 0
 nq3 = flip digit 1
 nq2 = flip digit 2
@@ -124,35 +160,37 @@ nL = flip digit 4
 nr = flip digit 5
 n = flip digit 6
 
+
 hasQuark :: PID -> PID -> Bool
-hasQuark p q = (hadron p || diquark p) && (or . fmap ( (==) q . ($ p) ) $ [nq1, nq2, nq3])
+hasQuark p q = (hadron p || diquark p) && elem q (sequenceA [nq1, nq2, nq3] p :: [PID])
 
 hasBottomQuark, hasCharmQuark :: PIDClass
-hasBottomQuark = flip hasQuark bottom
-hasCharmQuark = flip hasQuark charm
+hasBottomQuark = flip hasQuark 5
+hasCharmQuark = flip hasQuark 4
 
 
 ofType :: HasPID hp => hp -> PIDSet -> Bool
-ofType p = member (pid p)
+ofType p = member (view pid p)
 
-isType :: HasPID hp => hp -> PID -> Bool
-isType = (==) . pid
+typeOf :: HasPID hp => PIDSet -> hp -> Bool
+typeOf = flip ofType
+
+ofClass :: HasPID hp => hp -> PIDClass -> Bool
+ofClass p pc = pc (view pid p)
+
+classOf :: HasPID hp => PIDClass -> hp -> Bool
+classOf = flip ofClass
+
 
 isQuark, isChargedLepton, isNeutrino, isLepton :: HasPID hp => hp -> Bool
-isQuark p = p `ofType` quarks
-isChargedLepton p = p `ofType` chargedLeptons
-isNeutrino p = p `ofType` neutrinos
-isLepton p = p `ofType` leptons
+isQuark = typeOf quarks
+isChargedLepton = typeOf chargedLeptons
+isNeutrino = typeOf neutrinos
+isLepton = typeOf leptons
+isTau = typeOf tau . view abspid
 
 isHadron, isMeson, isBaryon, isDiquark, isTau :: HasPID hp => hp -> Bool
-isDiquark = diquark . pid
-isHadron = hadron . pid
-isMeson = meson . pid
-isBaryon = baryon . pid
-isTau p = abspid p == tau
-
-isPID :: HasPID hp => PID -> hp -> Bool
-isPID p part = p == pid part
-
-isPIDs :: HasPID hp => PIDSet -> hp -> Bool
-isPIDs ps part = pid part `member` ps
+isHadron = classOf hadron
+isMeson = classOf meson
+isDiquark = classOf diquark 
+isBaryon = classOf baryon
