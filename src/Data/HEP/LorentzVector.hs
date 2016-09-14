@@ -43,30 +43,30 @@ instance Serialize XYZT where
 
 
 -- PtEtaPhiE and XYZT are of course isomorphic.
-isoXyztPepe :: Iso' XYZT PtEtaPhiE
-isoXyztPepe = iso f g
+xyztPepe :: Iso' XYZT PtEtaPhiE
+xyztPepe = iso f g
     where f (XYZT x y z t) =
             let pt = sqrt(x**2 + y**2)
             in PtEtaPhiE
                 pt
                 (negate . log . tan . (/2) $ atan2 pt z)
-                (atan2 x y)
+                (atan2 y x)
                 t
 
           g (PtEtaPhiE pt eta phi e) =
             XYZT
                 (pt*cos phi)
                 (pt*sin phi)
-                (pt * sinh eta)
+                (pt*sinh eta)
                 e
 
 
 class HasLorentzVector a where
     toPtEtaPhiE :: Lens' a PtEtaPhiE
-    toPtEtaPhiE = toXYZT . isoXyztPepe
+    toPtEtaPhiE = toXYZT . xyztPepe
 
     toXYZT :: Lens' a XYZT
-    toXYZT = toPtEtaPhiE . from isoXyztPepe
+    toXYZT = toPtEtaPhiE . from xyztPepe
 
 
 instance HasLorentzVector XYZT where
@@ -173,8 +173,8 @@ withIso2 f i x y = view (from i) $ f (view i x) (view i y)
 
 -- all LorentzVectors are monoids under addition
 instance Monoid PtEtaPhiE where
-    mempty = view isoXyztPepe mempty
-    mappend = withIso2 mappend (from isoXyztPepe)
+    mempty = PtEtaPhiE 0 0 0 0
+    mappend = withIso2 mappend (from xyztPepe)
 
 instance Monoid XYZT where
     mempty = XYZT 0 0 0 0
