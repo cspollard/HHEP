@@ -8,6 +8,8 @@ module Data.HEP.LorentzVector where
 
 import Control.Lens
 
+import Data.Semigroup
+
 import Data.Serialize
 import GHC.Generics (Generic)
 import Data.Foldable (maximumBy)
@@ -172,18 +174,24 @@ withIso2 :: (a -> a -> a) -> Iso' b a -> b -> b -> b
 withIso2 f i x y = view (from i) $ f (view i x) (view i y)
 
 -- all LorentzVectors are monoids under addition
+instance Semigroup PtEtaPhiE where
+    (<>) = withIso2 (<>) (from xyztPepe)
+
 instance Monoid PtEtaPhiE where
     mempty = PtEtaPhiE 0 0 0 0
-    mappend = withIso2 mappend (from xyztPepe)
+    mappend = (<>)
 
-instance Monoid XYZT where
-    mempty = XYZT 0 0 0 0
-    (XYZT x y z t) `mappend` (XYZT x' y' z' t') =
+instance Semigroup XYZT where
+    XYZT x y z t <> XYZT x' y' z' t' =
         XYZT
             (x + x')
             (y + y')
             (z + z')
             (t + t')
+
+instance Monoid XYZT where
+    mempty = XYZT 0 0 0 0
+    mappend = (<>)
 
 
 leading :: (Foldable f, HasLorentzVector a) => f a -> Maybe a
