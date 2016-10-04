@@ -152,7 +152,10 @@ lvDot a b = view lvX a * view lvX b +
 
 
 lvDPhi :: (HasLorentzVector v, HasLorentzVector v') => v -> v' -> Double
-lvDPhi v v' = asin $ sin (view lvPhi v - view lvPhi v')
+lvDPhi v v' = f $ view lvPhi v - view lvPhi v'
+    where f x | x < (-pi) = f (x+2*pi)
+              | x > pi    = f (x-2*pi)
+              | otherwise = x
 
 
 lvDEta :: (HasLorentzVector a, HasLorentzVector b) => a -> b -> Double
