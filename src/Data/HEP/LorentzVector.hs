@@ -96,6 +96,12 @@ lvPhi = toPtEtaPhiE . _phi
 lvE :: HasLorentzVector a => Lens' a Double
 lvE = toPtEtaPhiE . _e
 
+lvRap :: HasLorentzVector a => Getter a Double
+lvRap = to $ \v -> let e = view lvE v
+                       pz = view lvPz v
+                   in  0.5 * log ((e + pz) / (e - pz))
+
+
 lvPx :: HasLorentzVector a => Lens' a Double
 lvPx = lvX
 lvPy :: HasLorentzVector a => Lens' a Double
@@ -158,15 +164,24 @@ lvDPhi v v' = f $ view lvPhi v - view lvPhi v'
               | otherwise = x
 
 
+lvDRap :: (HasLorentzVector a, HasLorentzVector b) => a -> b -> Double
+lvDRap v v' = view lvRap v - view lvRap v'
+
 lvDEta :: (HasLorentzVector a, HasLorentzVector b) => a -> b -> Double
 lvDEta v v' = view lvEta v - view lvEta v'
 
 
-lvDR :: (HasLorentzVector a, HasLorentzVector b) => a -> b -> Double
-lvDR v v' = sqrt $ dEta2 + dPhi2
+lvDREta :: (HasLorentzVector a, HasLorentzVector b) => a -> b -> Double
+lvDREta v v' = sqrt $ dEta2 + dPhi2
     where
         dPhi2 = let dp = lvDPhi v v' in dp*dp
         dEta2 = let de = lvDEta v v' in de*de
+
+lvDRRap :: (HasLorentzVector a, HasLorentzVector b) => a -> b -> Double
+lvDRRap v v' = sqrt $ dRap2 + dPhi2
+    where
+        dPhi2 = let dp = lvDPhi v v' in dp*dp
+        dRap2 = let de = lvDRap v v' in de*de
 
 
 lvAbsEta :: HasLorentzVector a => Getter a Double
