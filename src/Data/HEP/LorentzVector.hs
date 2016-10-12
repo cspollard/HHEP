@@ -21,10 +21,10 @@ import Data.Ord (comparing)
 
 data PtEtaPhiE =
     PtEtaPhiE
-        { __pt :: !Double
-        , __eta :: !Double
-        , __phi :: !Double
-        , __e :: !Double
+        { __pt :: {-# UNPACK #-} !Double
+        , __eta :: {-# UNPACK #-} !Double
+        , __phi :: {-# UNPACK #-} !Double
+        , __e :: {-# UNPACK #-} !Double
         } deriving (Show, Generic)
 
 makeLenses ''PtEtaPhiE
@@ -33,10 +33,10 @@ instance Serialize PtEtaPhiE where
 
 data XYZT =
     XYZT
-        { __x :: !Double
-        , __y :: !Double
-        , __z :: !Double
-        , __t :: !Double
+        { __x :: {-# UNPACK #-} !Double
+        , __y :: {-# UNPACK #-} !Double
+        , __z :: {-# UNPACK #-} !Double
+        , __t :: {-# UNPACK #-} !Double
         }
     deriving (Show, Generic)
 
