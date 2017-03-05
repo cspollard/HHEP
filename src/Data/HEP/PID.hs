@@ -1,15 +1,23 @@
-{-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedLists            #-}
+{-# LANGUAGE RankNTypes                 #-}
 
 {-
  - taken from
  - http://pdg.lbl.gov/2002/montecarlorpp.pdf
  -}
 
+-- TODO
+-- everything really should be INLINABLE here.
+
 module Data.HEP.PID
     ( PID, HasPID(..)
+    , PIDClass
+    , isA, ofClass, classOf
     , hasPID, abspid
     , anti
+    , union, unions, intersection, intersections
     , electron, eNeutrino
     , muon, mNeutrino
     , tau, tNeutrino
@@ -20,177 +28,204 @@ module Data.HEP.PID
     , photon, gamma
     , zBoson, wPlus, wMinus
     , higgs, hPlus, hMinus
-    , chargedLeptons, neutrinos
-    , leptons
-    , downTypeQuarks, upTypeQuarks
-    , quarks, partons
-    , weakBosons, ewBosons
-    , hasQuark
-    , hasBottomQuark, hasCharmQuark
-    , ofType, ofClass
-    , isQuark, isChargedLepton, isNeutrino
-    , isLepton, isTau
-    , isHadron, isMeson, isDiquark, isBaryon
+    , chargedLepton, neutrino
+    , lepton
+    , downTypeQuark, upTypeQuark
+    , quark, parton
+    , weakBoson, ewBoson
+    , bottomHadron, charmHadron
+    , isQuark, isChargedLepton, isNeutrino, isLepton
+    , isHadron, isMeson, isBaryon, isDiquark, isTau
     ) where
 
-import Control.Lens
+import           Control.Lens
+import qualified Data.Set     as S
 
-import Data.Set as S
-
--- TODO
--- Integer?
 newtype PID = PID Int
         deriving (Eq, Ord, Enum, Show, Num, Real, Integral)
 
-class HasPID hp where
-    pid :: Lens' hp PID
+class HasPID a where
+    pid :: Lens' a PID
 
-hasPID :: HasPID hp => hp -> PID -> Bool
+hasPID :: HasPID a => a -> PID -> Bool
 hasPID part p = p == view pid part
 
 instance HasPID PID where
     pid = id
 
-abspid :: HasPID hp => Getter hp PID
+abspid :: HasPID a => Getter a PID
 abspid = pid . to abs
 
 
-type PIDSet = Set PID
+-- need this datatype so that we can union sets before applying function...
+data PIDClass where
+  PIDFunc :: (PID -> Bool) -> PIDClass
+  PIDSet :: S.Set PID -> PIDClass
 
-anti :: PIDSet -> PIDSet
-anti = S.map negate
+classOf :: HasPID a => PIDClass -> a -> Bool
+classOf (PIDFunc f) = views pid f
+classOf (PIDSet s)  = views pid (`S.member` s)
 
-electron, eNeutrino, muon, mNeutrino, tau, tNeutrino :: PIDSet
-down, up, strange, charm, bottom, top :: PIDSet
-gluon, photon, gamma, zBoson, wPlus, wMinus :: PIDSet
-higgs, hPlus, hMinus :: PIDSet
+ofClass, isA :: HasPID a => a -> PIDClass -> Bool
+ofClass = flip classOf
+isA = ofClass
+
+union :: PIDClass -> PIDClass -> PIDClass
+union (PIDSet s) (PIDSet s') = PIDSet $ s `S.union` s'
+union c c'                   = PIDFunc $ (||) <$> classOf c <*> classOf c'
+
+intersection :: PIDClass -> PIDClass -> PIDClass
+intersection (PIDSet s) (PIDSet s') = PIDSet $ s `S.intersection` s'
+intersection c c'                   = PIDFunc $ (&&) <$> classOf c <*> classOf c'
+
+newtype Union = U { unU :: PIDClass }
+inU2 f (U x) (U y) = U (f x y)
+
+instance Monoid Union where
+  mempty = U $ PIDSet S.empty
+  mappend = inU2 union
+
+newtype Intersection = I { unI :: PIDClass }
+inI2 f (I x) (I y) = I (f x y)
+
+instance Monoid Intersection where
+  mempty = I $ PIDFunc (const True)
+  mappend = inI2 intersection
 
 
-electron = [11]
-eNeutrino = [12]
+unions :: [PIDClass] -> PIDClass
+unions = unU . mconcat . fmap U
 
-muon = [13]
-mNeutrino = [14]
+intersections :: [PIDClass] -> PIDClass
+intersections = unI . mconcat . fmap I
 
-tau = [15]
-tNeutrino = [16]
+anti :: PIDClass -> PIDClass
+anti (PIDFunc f) = PIDFunc $ f . negate
+anti (PIDSet s)  = PIDSet $ S.map negate s
 
-down = [1]
-up = [2]
-strange = [3]
-charm = [4]
-bottom = [5]
-top = [6]
+electron, eNeutrino, muon, mNeutrino, tau, tNeutrino :: PIDClass
+down, up, strange, charm, bottom, top :: PIDClass
+gluon, photon, gamma, zBoson, wPlus, wMinus :: PIDClass
+higgs, hPlus, hMinus :: PIDClass
 
-gluon = [21]
-photon = [22]
+
+electron = PIDSet [11]
+eNeutrino = PIDSet [12]
+
+muon = PIDSet [13]
+mNeutrino = PIDSet [14]
+
+tau = PIDSet [15]
+tNeutrino = PIDSet [16]
+
+down = PIDSet [1]
+up = PIDSet [2]
+strange = PIDSet [3]
+charm = PIDSet [4]
+bottom = PIDSet [5]
+top = PIDSet [6]
+
+gluon = PIDSet [21]
+photon = PIDSet [22]
 gamma = photon
-zBoson = [23]
-wPlus = [24]
-wMinus = [-24]
+zBoson = PIDSet [23]
+wPlus = PIDSet [24]
+wMinus = PIDSet [-24]
 
-higgs = [25]
+higgs = PIDSet [25]
 
-hPlus = [37]
-hMinus = [-37]
+hPlus = PIDSet [37]
+hMinus = PIDSet [-37]
 
-chargedLeptons, neutrinos, leptons :: PIDSet
-chargedLeptons =
-    unions
-        [ electron, anti electron
-        , muon, anti muon
-        , tau, anti tau
-        ]
+chargedLepton, neutrino, lepton :: PIDClass
+chargedLepton =
+  unions
+    [ electron, anti electron
+    , muon, anti muon
+    , tau, anti tau
+    ]
 
-neutrinos =
-    unions
-        [ eNeutrino, anti eNeutrino
-        , mNeutrino, anti mNeutrino
-        , tNeutrino, anti tNeutrino
-        ]
+neutrino =
+  unions
+    [ eNeutrino, anti eNeutrino
+    , mNeutrino, anti mNeutrino
+    , tNeutrino, anti tNeutrino
+    ]
 
-leptons = chargedLeptons `union` neutrinos
+lepton = chargedLepton `union` neutrino
 
-downTypeQuarks, upTypeQuarks, quarks, partons :: PIDSet
-downTypeQuarks =
-    unions
-        [ down, anti down
-        , strange, anti strange
-        , bottom, anti bottom
-        ]
+downTypeQuark, upTypeQuark, quark, parton :: PIDClass
+downTypeQuark =
+  unions
+    [ down, anti down
+    , strange, anti strange
+    , bottom, anti bottom
+    ]
 
-upTypeQuarks =
-    unions
-        [ up, anti up
-        , charm, anti charm
-        , top, anti charm
-        ]
-
-
-quarks = downTypeQuarks `union` upTypeQuarks
-
-partons = gluon `union` quarks
-
-weakBosons, ewBosons :: PIDSet
-weakBosons = unions [zBoson, wPlus, wMinus]
-
-ewBosons = photon `union` weakBosons
+upTypeQuark =
+  unions
+    [ up, anti up
+    , charm, anti charm
+    , top, anti charm
+    ]
 
 
-type PIDClass = PID -> Bool
+quark = downTypeQuark `union` upTypeQuark
+parton = gluon `union` quark
+
+weakBoson, ewBoson :: PIDClass
+weakBoson = unions [zBoson, wPlus, wMinus]
+ewBoson = photon `union` weakBoson
 
 diquark, hadron, meson, baryon :: PIDClass
-diquark p = 1000 < p && p < 7000
-hadron p = nq2 p > 0 && nq3 p > 0
-meson p = hadron p && nq1 p == 0
-baryon p = hadron p && nq1 p > 0
+diquark = PIDFunc $ \p -> 1000 < p && p < 7000
+hadron = PIDFunc $ \p -> nq2 p > 0 && nq3 p > 0
+meson = hadron `intersection` PIDFunc ((== 0) . nq1)
+baryon = hadron `intersection` PIDFunc ((> 0) . nq1)
 
--- TODO
--- this could be faster as Int?
 digit :: Integral a => a -> a -> a
 digit x i = div (abs x) (10^i) `mod` 10
+{-# INLINABLE digit #-}
+
+pidDig i = views pid (`digit` i)
+{-# INLINABLE pidDig #-}
+
+nJ, nq3, nq2, nq1, nL, nr, n :: HasPID a => a -> PID
+nJ = pidDig 0
+nq3 = pidDig 1
+nq2 = pidDig 2
+nq1 = pidDig 3
+nL = pidDig 4
+nr = pidDig 5
+n = pidDig 6
+{-# INLINABLE nJ #-}
+{-# INLINABLE nq3 #-}
+{-# INLINABLE nq2 #-}
+{-# INLINABLE nq1 #-}
+{-# INLINABLE nL #-}
+{-# INLINABLE nr #-}
+{-# INLINABLE n #-}
 
 
-nJ, nq3, nq2, nq1, nL, nr, n :: PID -> PID
-nJ = flip digit 0
-nq3 = flip digit 1
-nq2 = flip digit 2
-nq1 = flip digit 3
-nL = flip digit 4
-nr = flip digit 5
-n = flip digit 6
+quarkIn :: PID -> PIDClass
+quarkIn q = (hadron `union` diquark) `intersection`
+  PIDFunc (\p -> q `elem` (sequenceA [nq1, nq2, nq3] p :: [PID]))
 
 
-hasQuark :: PID -> PID -> Bool
-hasQuark p q = (hadron p || diquark p) && elem q (sequenceA [nq1, nq2, nq3] p :: [PID])
-
-hasBottomQuark, hasCharmQuark :: PIDClass
-hasBottomQuark = flip hasQuark 5
-hasCharmQuark = flip hasQuark 4
+bottomHadron, charmHadron :: PIDClass
+bottomHadron = quarkIn 5
+charmHadron = quarkIn 4
 
 
-ofType :: HasPID hp => hp -> PIDSet -> Bool
-ofType p = member (view pid p)
-
-typeOf :: HasPID hp => PIDSet -> hp -> Bool
-typeOf = flip ofType
-
-ofClass :: HasPID hp => hp -> PIDClass -> Bool
-ofClass p pc = pc (view pid p)
-
-classOf :: HasPID hp => PIDClass -> hp -> Bool
-classOf = flip ofClass
-
-
-isQuark, isChargedLepton, isNeutrino, isLepton :: HasPID hp => hp -> Bool
-isQuark = typeOf quarks
-isChargedLepton = typeOf chargedLeptons
-isNeutrino = typeOf neutrinos
-isLepton = typeOf leptons
-isTau = typeOf tau . view abspid
+isQuark, isChargedLepton, isNeutrino, isLepton :: HasPID a => a -> Bool
+isQuark = classOf quark
+isChargedLepton = classOf chargedLepton
+isNeutrino = classOf neutrino
+isLepton = classOf lepton
+isTau = classOf tau . view abspid
 
 isHadron, isMeson, isBaryon, isDiquark, isTau :: HasPID hp => hp -> Bool
 isHadron = classOf hadron
 isMeson = classOf meson
-isDiquark = classOf diquark 
+isDiquark = classOf diquark
 isBaryon = classOf baryon
