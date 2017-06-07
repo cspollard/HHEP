@@ -1,19 +1,19 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE TemplateHaskell            #-}
 
 module Data.HEP.LorentzVector where
 
-import Control.Lens
+import           Control.Lens
 
-import Data.Semigroup
+import           Data.Semigroup
 
-import Data.Serialize
-import GHC.Generics (Generic)
-import Data.Foldable (maximumBy)
-import Data.Ord (comparing)
+import           Data.Foldable  (maximumBy)
+import           Data.Ord       (comparing)
+import           Data.Serialize
+import           GHC.Generics   (Generic)
 
 
 -- TODO
@@ -21,10 +21,10 @@ import Data.Ord (comparing)
 
 data PtEtaPhiE =
     PtEtaPhiE
-        { __pt :: {-# UNPACK #-} !Double
+        { __pt  :: {-# UNPACK #-} !Double
         , __eta :: {-# UNPACK #-} !Double
         , __phi :: {-# UNPACK #-} !Double
-        , __e :: {-# UNPACK #-} !Double
+        , __e   :: {-# UNPACK #-} !Double
         } deriving (Show, Generic)
 
 makeLenses ''PtEtaPhiE
@@ -157,10 +157,13 @@ lvDot a b = view lvX a * view lvX b +
             view lvT a * view lvT b
 
 
+twoPi :: Double
+twoPi = 2*pi
+
 lvDPhi :: (HasLorentzVector v, HasLorentzVector v') => v -> v' -> Double
 lvDPhi v v' = f $ view lvPhi v - view lvPhi v'
-    where f x | x < (-pi) = f (x+2*pi)
-              | x > pi    = f (x-2*pi)
+    where f x | x < (-pi) = f (x+twoPi)
+              | x >= pi    = f (x-twoPi)
               | otherwise = x
 
 
