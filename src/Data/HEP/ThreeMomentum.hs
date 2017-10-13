@@ -10,9 +10,9 @@ import           GHC.Generics   (Generic)
 
 data XYZ a =
   XYZ
-  { _vx :: {-# UNPACK #-} !a
-  , _vy :: {-# UNPACK #-} !a
-  , _vz :: {-# UNPACK #-} !a
+  { _vx :: !a
+  , _vy :: !a
+  , _vz :: !a
   } deriving (Show, Generic, Functor)
 
 makeLenses ''XYZ
