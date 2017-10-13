@@ -7,38 +7,36 @@
 module Data.HEP.LorentzVector where
 
 import           Control.Lens
-
+import           Data.Foldable          (maximumBy)
+import qualified Data.HEP.ThreeMomentum as TM
+import           Data.Ord               (comparing)
 import           Data.Semigroup
-
-import           Data.Foldable  (maximumBy)
-import           Data.Ord       (comparing)
 import           Data.Serialize
-import           GHC.Generics   (Generic)
+import           GHC.Generics           (Generic)
 
 
 -- TODO
 -- this formulation could be quite slow in some cases.
 
 data PtEtaPhiE =
-    PtEtaPhiE
-        { __pt  :: {-# UNPACK #-} !Double
-        , __eta :: {-# UNPACK #-} !Double
-        , __phi :: {-# UNPACK #-} !Double
-        , __e   :: {-# UNPACK #-} !Double
-        } deriving (Show, Generic)
+  PtEtaPhiE
+  { __pt  :: {-# UNPACK #-} !Double
+  , __eta :: {-# UNPACK #-} !Double
+  , __phi :: {-# UNPACK #-} !Double
+  , __e   :: {-# UNPACK #-} !Double
+  } deriving (Show, Generic)
 
 makeLenses ''PtEtaPhiE
 instance Serialize PtEtaPhiE where
 
 
 data XYZT =
-    XYZT
-        { __x :: {-# UNPACK #-} !Double
-        , __y :: {-# UNPACK #-} !Double
-        , __z :: {-# UNPACK #-} !Double
-        , __t :: {-# UNPACK #-} !Double
-        }
-    deriving (Show, Generic)
+  XYZT
+  { __x :: {-# UNPACK #-} !Double
+  , __y :: {-# UNPACK #-} !Double
+  , __z :: {-# UNPACK #-} !Double
+  , __t :: {-# UNPACK #-} !Double
+  } deriving (Show, Generic)
 
 makeLenses ''XYZT
 instance Serialize XYZT where
@@ -76,6 +74,11 @@ instance HasLorentzVector XYZT where
 
 instance HasLorentzVector PtEtaPhiE where
     toPtEtaPhiE = iso id id
+
+toXYZ :: HasLorentzVector lv => lv -> TM.XYZ Double
+toXYZ lv = TM.XYZ x y z
+  where
+    XYZT x y z _ = view toXYZT lv
 
 
 lvX :: HasLorentzVector a => Lens' a Double
@@ -162,9 +165,10 @@ twoPi = 2*pi
 
 lvDPhi :: (HasLorentzVector v, HasLorentzVector v') => v -> v' -> Double
 lvDPhi v v' = f $ view lvPhi v - view lvPhi v'
-    where f x | x < (-pi) = f (x+twoPi)
-              | x >= pi    = f (x-twoPi)
-              | otherwise = x
+    where
+      f x | x < (-pi) = f (x + twoPi)
+          | x >= pi   = f (x - twoPi)
+          | otherwise = x
 
 
 lvDRap :: (HasLorentzVector a, HasLorentzVector b) => a -> b -> Double

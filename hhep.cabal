@@ -1,8 +1,8 @@
 name:                hhep
 version:             0.3.0.0
-synopsis:            
+synopsis:
     conveniences for HEP analysis
-description:         
+description:
     conveniences for HEP analysis
 license:             BSD3
 license-file:        LICENSE
@@ -19,6 +19,7 @@ source-repository head
 library
   exposed-modules:     Data.HEP.LorentzVector
                      , Data.HEP.PID
+                     , Data.HEP.ThreeMomentum
 
   build-depends:       base
                      , lens
