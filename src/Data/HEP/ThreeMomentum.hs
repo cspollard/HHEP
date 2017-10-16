@@ -25,5 +25,8 @@ cross :: Num a => XYZ a -> XYZ a -> XYZ a
 cross (XYZ x y z) (XYZ x' y' z') =
   XYZ (y*z' - z*y') (z*x' - x*z') (x*y' - x'*y)
 
-modulus :: Num a => XYZ a -> a
-modulus xyz = inner xyz xyz
+modulus2 :: Num a => XYZ a -> a
+modulus2 xyz = inner xyz xyz
+
+modulus :: Floating a => XYZ a -> a
+modulus = sqrt . modulus2
