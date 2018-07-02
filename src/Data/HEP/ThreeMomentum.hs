@@ -18,6 +18,11 @@ data XYZ a =
 makeLenses ''XYZ
 instance Serialize a => Serialize (XYZ a) where
 
+instance Num a => Monoid (XYZ a) where
+  mempty = XYZ 0 0 0
+  mappend (XYZ x1 y1 z1) (XYZ x2 y2 z2) = XYZ (x1+x2) (y1+y2) (z1+z2)
+
+
 inner :: Num a => XYZ a -> XYZ a -> a
 inner (XYZ x y z) (XYZ x' y' z') = (x*x') + (y*y') + (z*z')
 
@@ -30,3 +35,6 @@ modulus2 xyz = inner xyz xyz
 
 modulus :: Floating a => XYZ a -> a
 modulus = sqrt . modulus2
+
+diff :: Num a => XYZ a -> XYZ a -> XYZ a
+diff (XYZ x1 y1 z1) (XYZ x2 y2 z2) = XYZ (x1-x2) (y1-y2) (z1-z2)
