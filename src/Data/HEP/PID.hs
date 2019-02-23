@@ -39,7 +39,8 @@ module Data.HEP.PID
     ) where
 
 import           Control.Lens
-import qualified Data.Set     as S
+import           Data.Semigroup
+import qualified Data.Set       as S
 
 newtype PID = PID Int
         deriving (Eq, Ord, Enum, Show, Num, Real, Integral)
