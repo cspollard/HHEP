@@ -18,9 +18,11 @@ data XYZ a =
 makeLenses ''XYZ
 instance Serialize a => Serialize (XYZ a) where
 
+instance Num a => Semigroup (XYZ a) where
+  XYZ x1 y1 z1 <> XYZ x2 y2 z2 = XYZ (x1+x2) (y1+y2) (z1+z2)
+
 instance Num a => Monoid (XYZ a) where
   mempty = XYZ 0 0 0
-  mappend (XYZ x1 y1 z1) (XYZ x2 y2 z2) = XYZ (x1+x2) (y1+y2) (z1+z2)
 
 
 inner :: Num a => XYZ a -> XYZ a -> a

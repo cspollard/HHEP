@@ -79,18 +79,23 @@ intersection (PIDSet s) (PIDSet s') = PIDSet $ s `S.intersection` s'
 intersection c c'                   = PIDFunc $ (&&) <$> classOf c <*> classOf c'
 
 newtype Union = U { unU :: PIDClass }
+
 inU2 f (U x) (U y) = U (f x y)
+
+instance Semigroup Union where
+  (<>) = inU2 union
 
 instance Monoid Union where
   mempty = U $ PIDSet S.empty
-  mappend = inU2 union
 
 newtype Intersection = I { unI :: PIDClass }
 inI2 f (I x) (I y) = I (f x y)
 
+instance Semigroup Intersection where
+  (<>) = inI2 intersection
+
 instance Monoid Intersection where
   mempty = I $ PIDFunc (const True)
-  mappend = inI2 intersection
 
 
 unions :: [PIDClass] -> PIDClass
