@@ -5,6 +5,7 @@
 module Data.HEP.ThreeMomentum where
 
 import           Control.Lens
+import           Data.Semigroup
 import           Data.Serialize
 import           GHC.Generics   (Generic)
 
