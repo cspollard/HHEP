@@ -36,10 +36,10 @@ module Data.HEP.PID
     , bottomHadron, charmHadron
     , isQuark, isChargedLepton, isNeutrino, isLepton
     , isHadron, isMeson, isBaryon, isDiquark, isTau
+    , nJ, nq3, nq2, nq1, nL, nr
     ) where
 
 import           Control.Lens
-import           Data.Semigroup
 import qualified Data.Set       as S
 
 newtype PID = PID Int
@@ -81,6 +81,7 @@ intersection c c'                   = PIDFunc $ (&&) <$> classOf c <*> classOf c
 
 newtype Union = U { unU :: PIDClass }
 
+inU2 :: (PIDClass -> PIDClass -> PIDClass) -> Union -> Union -> Union
 inU2 f (U x) (U y) = U (f x y)
 
 instance Semigroup Union where
@@ -90,6 +91,8 @@ instance Monoid Union where
   mempty = U $ PIDSet S.empty
 
 newtype Intersection = I { unI :: PIDClass }
+
+inI2 :: (PIDClass -> PIDClass -> PIDClass) -> Intersection -> Intersection -> Intersection
 inI2 f (I x) (I y) = I (f x y)
 
 instance Semigroup Intersection where
@@ -193,8 +196,11 @@ digit :: Integral a => a -> a -> a
 digit x i = div (abs x) (10^i) `mod` 10
 {-# INLINABLE digit #-}
 
-pidDig i = views pid (`digit` i)
+
+pidDig :: HasPID a => PID -> a -> PID
+pidDig i x = view pid x `digit` i
 {-# INLINABLE pidDig #-}
+
 
 nJ, nq3, nq2, nq1, nL, nr, n :: HasPID a => a -> PID
 nJ = pidDig 0

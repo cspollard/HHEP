@@ -10,7 +10,6 @@ import           Control.Lens
 import           Data.Foldable          (maximumBy)
 import qualified Data.HEP.ThreeMomentum as TM
 import           Data.Ord               (comparing)
-import           Data.Semigroup
 import           Data.Serialize
 import           GHC.Generics           (Generic)
 
